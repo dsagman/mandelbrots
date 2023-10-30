@@ -1,0 +1,9 @@
+notes for running turbopascal in dosbox-x
+
+mount c ~\DOSbox
+path=c:\TP\BIN
+mount b /home/agman/Documents/GitHub/mandelbrots/
+b:
+turbo
+
+approx 18.2 ticks per second

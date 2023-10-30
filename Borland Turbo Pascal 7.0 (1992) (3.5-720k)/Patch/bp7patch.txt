@@ -1,0 +1,47 @@
+
+Patching Turbo Pascal
+The Problem:
+Turbo Pascal v.7 for DOS programs which contain the code
+
+uses
+   CRT
+
+may freeze up or produce a "Divide by zero" error on machines with speeds 
+greater than about 200 Mhz. This error occurs when the CRT unit attempts to 
+measure the speed of the machine. In order to measure the speed, it runs a 
+timing loop and then does some division to produce an average speed. On very 
+fast machines, this average ends up being a number larger than the program 
+(in its current form) can store. For technical reasons, this generates a 
+divide by zero error.
+
+The Cure:
+You must fix your version of Turbo Pascal by applying a patch.
+
+   1. Download the bp7patch.exe patch file into the Turbo Pascal v.7 \bin 
+      folder for your machine (the folder will have a name such as C:\Borland\turbo7\bin).
+   2. Go to a DOS prompt, and change to the Turbo Pascal v.7 \bin folder.
+   3. Determine the minor version number of your version of Turbo Pascal by 
+      looking at the creation time for the TURBO.TPL file. The command 
+      DIR TURBO.TPL will display this. The result will be one of
+
+          TURBO.TPL  48,432  10-27-92  7:00a
+          TURBO.TPL  48,464  03-09-93  7:01a 
+
+      depending on whether you have version 7.00 or 7.01.
+   4. Backup your program files in case of catastrophic error:
+
+          MKDIR BACKUP
+          COPY T*.* BACKUP
+
+   5. Uncompress the archive (this is a self-extracting archive file):
+
+          BP7PATCH
+
+   6. Install the patch:
+
+          PATCH PATCHxxx
+
+      where xxx is replaced with 700 or 701, depending on the minor version 
+      number of your software. 
+
+Back to: [Home Page] 
