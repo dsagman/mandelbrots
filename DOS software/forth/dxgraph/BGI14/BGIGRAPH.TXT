@@ -1,0 +1,256 @@
+BGIGRAPH - A BGI compatible graphics library
+
+This document summarises the functions provided by BGIGRAPH and
+explains differences, where they exist, between BGIGRAPH and
+the Borland graphics library.  For detailed information on each
+function refer to the HELP files supplied with Borland Turbo-C
+or Turbo-Pascal.
+
+BGI Functions
+-------------
+ARC                ( x y start_angle end_angle radius -- )
+BAR                ( x_min y_min x_max y_max -- )
+BAR3D              ( x1 y1 x2 y2 depth top -- )
+CIRCLE             ( x y radius -- )
+CLEARDEVICE        ( -- )
+CLEARVIEWPORT      ( -- )
+CLOSEGRAPH         ( -- )
+DRAWPOLY           ( points adr -- )
+ELLIPSE            ( x y start_angle end_angle x_radius y_radius -- )
+FILLELLIPSE        ( x y x_radius y_radius -- )
+FILLPOLY           ( points adr -- )
+FLOODFILL          ( x y color_edge -- )
+GETASPECTRATIO     ( -- x_aspect y_aspect )
+GETBKCOLOR         ( -- color )
+GETCOLOR           ( -- color )
+GETDEFAULTPALETTE  ( adr_pal -- )
+GETDRIVERNAME      ( -- adr len )
+GETGRAPHMODE       ( -- mode )
+GETIMAGE           ( x1 y1 x2 y2 seg offs -- )
+GETMAXCOLOR        ( -- u )
+GETMAXMODE         ( -- mode )
+GETMAXX            ( -- x_max )
+GETMAXY            ( -- y_max )
+GETMODENAME        ( mode -- adr len )
+GETPALETTE         ( adr_pal -- )
+GETPALETTESIZE     ( -- u )
+GETPIXEL           ( x y -- color )
+GETX               ( -- x )
+GETY               ( -- y )
+GRAPHDEFAULTS      ( -- )
+GRAPHERRORMSG      ( error -- adr len )
+GRAPHRESULT        ( -- error )
+IMAGESIZE          ( x1 y1 x2 y2 -- u )
+INITGRAPH	   not implemented - use OPENGRAPH
+LINE               ( x1 y1 x2 y2 -- )
+LINEREL            ( x y -- )
+LINETO             ( x y -- )
+MOVEREL            ( x y -- )
+MOVETO             ( x y -- )
+OPENGRAPH          ( adr len -- )
+OUTTEXT            ( adr len -- )
+OUTTEXTXY          ( x y adr len -- )
+PIESLICE           ( x y start_angle end_angle radius -- )
+PUTIMAGE           ( x y seg offs mode -- )
+PUTPIXEL           ( x y color -- )
+RECTANGLE          ( x1 y1 x2 y2 -- )
+RESTORECRTMODE     ( -- )
+SECTOR             ( x y start_angle end_angle x_radius y_radius -- )
+SETALLPALETTE      ( adr_pal -- )
+SETASPECTRATIO     ( x_aspect y_aspect -- )
+SETBKCOLOR         ( colornum -- )
+SETCOLOR           ( color -- )
+SETFILLPATTERN     ( adr_pattern color -- )
+SETFILLSTYLE       ( pattern color -- )
+SETGRAPHBUFSIZE    ( size -- )
+SETGRAPHMODE       ( mode -- )
+SETLINESTYLE       ( linestyle upattern width -- )
+SETPALETTE         ( colornum color -- )
+SETRGBPALETTE      ( colornum red green blue -- )
+SETTEXTJUSTIFY     ( horiz vert -- )
+SETTEXTSTYLE       ( font direction charsize -- )
+SETVIEWPORT        ( x1 y1 x2 y2 clip -- )
+SETWRITEMODE       ( mode -- )
+TEXTHEIGHT         ( addr u -- height )
+TEXTWIDTH          ( addr u -- width )
+
+BGI Constants
+-------------
+EMPTYFILL          ( -- 0 )       \ fill styles
+SOLIDFILL          ( -- 1 )
+LINEFILL           ( -- 2 )
+LTSLASHFILL        ( -- 3 )
+SLASHFILL          ( -- 4 )
+BKSLASHFILL        ( -- 5 )
+LTBKSLASHFILL      ( -- 6 )
+HATCHFILL          ( -- 7 )
+XHATCHFILL         ( -- 8 )
+INTERLEAVEFILL     ( -- 9 )
+WIDEDOTFILL        ( -- 10 )
+CLOSEDOTFILL       ( -- 11 )
+USERFILL           ( -- 12 )
+
+SOLIDLN            ( -- 0 )       \ line styles
+DOTTEDLN           ( -- 1 )
+CENTERLN           ( -- 2 )
+DASHEDLN           ( -- 3 )
+USERBITLN          ( -- 4 )
+
+NORMWIDTH          ( -- 1 )       \ line widths
+THICKWIDTH         ( -- 3 )
+
+CLIPOFF            ( -- 0 )       \ viewport
+CLIPON             ( -- 1 )
+
+TOPOFF             ( -- 0 )       \ bar3d
+TOPON              ( -- 1 )
+
+HORIZDIR           ( -- 0 )       \ text direction
+VERTDIR            ( -- 1 )
+
+LEFTTEXT           ( -- 0 )       \ text justification
+CENTERTEXT         ( -- 1 )
+RIGHTTEXT          ( -- 2 )
+BOTTOMTEXT         ( -- 0 )
+TOPTEXT            ( -- 2 )
+
+DEFAULTFONT        ( -- 0 )       \ fonts
+
+NORMALPUT          ( -- 0 )       \ bitmap ops
+COPYPUT            ( -- 0 )
+XORPUT             ( -- 1 )
+ORPUT              ( -- 2 )
+ANDPUT             ( -- 3 )
+NOTPUT             ( -- 4 )
+
+
+Differences from Borland BGI graphics library
+---------------------------------------------
+
+1. The following functions are not available.
+
+  INITGRAPH
+  DETECTGRAPH
+  GETMODERANGE
+
+  Use OPENGRAPH and SETGRAPHMODE instead.
+
+  SETUSERCHARSIZE
+
+  Stroked fonts are not currently supported.  Font 0 (the system
+  hardware font) is available.
+
+2. GRAPHRESULT is currently implemented for the following functions.
+
+  CLOSEGRAPH
+  FLOODFILL
+  GETGRAPHMODE
+  IMAGESIZE
+  OPENGRAPH
+  SETBKCOLOR
+  SETGRAPHMODE
+  SETPALETTE
+  SETTEXTSTYLE
+  SETVIEWPORT
+
+  GRAPHRESULT returns the status of the last operation as an error
+  code and clears the register.  GRAPHERRORMSG may be used to convert
+  the error code to a string e.g. for printing.
+
+3. Borland BGI types/structures are not directly supported.  An
+  alternative method of accessing current parameters is provided
+  (see "Additional functions" below).
+
+
+Additional functions
+--------------------
+
+1. Initialization
+
+  OPENGRAPH   ( adr len -- )
+
+  Initialize the graphics system by loading the BGI graphics driver
+  whose filename is adr len.  If adr len does not contain a filetype
+  then .BGI is appended.  The system is placed into graphics mode
+  and all settings are reset to their default.  If the operation was
+  successful GRAPHRESULT returns 0.
+
+  OPENGRAPH replaces the BGI function INITGRAPH.
+
+2. The following operators replace BGI type/structure functions.
+
+  \ ViewPort
+  GETVIEWSETTINGS   ( -- base-adr )
+  VIEW.LEFT         ( -- x1 )
+  VIEW.TOP          ( -- y1 )
+  VIEW.RIGHT        ( -- x2 )
+  VIEW.BOTTOM       ( -- y2 )
+  VIEW.CLIP         ( -- flag )
+
+  \ FillSettings
+  GETFILLSETTINGS   ( -- base-adr )
+  FILL.PATTERN      ( -- fillpattern )
+  FILL.COLOR        ( -- color )
+
+  \ LineSettings
+  GETLINESETTINGS   ( -- base-adr )
+  LINE.STYLE        ( -- linestyle )
+  LINE.UPATTERN     ( -- upattern )
+  LINE.THICKNESS    ( -- thickness )
+
+  \ TextSettings
+  GETTEXTSETTINGS   ( -- base-adr )
+  TEXT.FONT         ( -- font )
+  TEXT.DIRECTION    ( -- direction )
+  TEXT.CHARSIZE     ( -- charsize )
+  TEXT.HORIZ        ( -- horiz )
+  TEXT.VERT         ( -- vert )
+
+  \ ArcCoords
+  GETARCCOORDS      ( -- base-adr )
+  ARC.X             ( -- x_center )
+  ARC.Y             ( -- y_center )
+  ARC.XSTART        ( -- x_start )
+  ARC.YSTART        ( -- y_start )
+  ARC.XEND          ( -- x_end )
+  ARC.YEND          ( -- y_end )
+
+  \ Palette
+  PALETTE.SIZE      ( -- size )
+  PALETTE.COLORS    ( -- adr_colors )
+
+3. Device parameters
+
+  XDPI     ( -- x_dpi )   \ X dots per inch
+  YDPI     ( -- y_dpi )   \ Y dots per inch
+
+4. Trigonometry
+
+  REDUCE   ( angle1 -- angle2 )   \ reduce angle to 0..360
+  SIN      ( angle multiplier -- sin )   \ angle 0..360
+  COS      ( angle multiplier -- cos )   \ angle 0..360
+
+  All angles are specified in degrees.
+
+5. Exception handling
+
+  ?THROW   ( flag n -- )
+
+  Perform  n THROW  if flag is not zero.
+
+6. DOS memory allocation
+
+  GETMEM   ( #paragraphs -- segment 0 | maxparagraphs ior )
+  RELMEM   ( segment -- ior )
+  SETMEM   ( segment #paragraphs -- maxparagraphs ior )
+
+
+History
+-------
+1.0  First release
+1.1  Ellipse/arc allows start-angle greater than end-angle.
+     SETBKCOLOR fixed.
+1.2  Updated to DX-Forth 3.91
+1.3  Updated to DX-Forth 3.93
+1.4  Minor optimizations
+

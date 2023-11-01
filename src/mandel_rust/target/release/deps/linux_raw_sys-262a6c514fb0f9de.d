@@ -1,0 +1,11 @@
+/home/agman/Documents/programs/mandel_rust/target/release/deps/linux_raw_sys-262a6c514fb0f9de.rmeta: /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/lib.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/elf.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/errno.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/general.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/ioctl.rs
+
+/home/agman/Documents/programs/mandel_rust/target/release/deps/liblinux_raw_sys-262a6c514fb0f9de.rlib: /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/lib.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/elf.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/errno.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/general.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/ioctl.rs
+
+/home/agman/Documents/programs/mandel_rust/target/release/deps/linux_raw_sys-262a6c514fb0f9de.d: /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/lib.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/elf.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/errno.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/general.rs /home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/ioctl.rs
+
+/home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/lib.rs:
+/home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/elf.rs:
+/home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/errno.rs:
+/home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/general.rs:
+/home/agman/.cargo/registry/src/index.crates.io-6f17d22bba15001f/linux-raw-sys-0.4.10/src/x86_64/ioctl.rs:

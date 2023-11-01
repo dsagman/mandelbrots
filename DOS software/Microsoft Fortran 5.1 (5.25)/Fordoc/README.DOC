@@ -1,0 +1,622 @@
+==============================<README.DOC file>==============================
+
+
+Release Notes for the Microsoft(R) FORTRAN Optimizing Compiler, Version 5.00
+
+                (C) Copyright Microsoft Corporation, 1989
+
+This file contains information about Version 5.00 of the Microsoft(R) FORTRAN
+Optimizing Compiler and libraries for MS-DOS(R) and the Microsoft Operating
+System/2 (MS(R) OS/2). It also contains information about the utility
+programs supplied with this product.
+
+This file is more up-to-date than the manuals. If the manuals conflict with
+this file, you should assume this file is correct.
+
+Microsoft updates language documentation when it is reprinted, so some of the
+information in this file may already be in your manuals.
+
+Microsoft documentation uses the term "OS/2" to refer to the OS/2 systems -- 
+Microsoft Operating System/2 (MS OS/2) and IBM(R) OS/2. Similarly, the term 
+"DOS" refers to both the MS-DOS and IBM Personal Computer DOS operating
+systems.  The name of a specific operating system is used when it is necessary
+to note features that are unique to that system.
+
+
+
+====================<Requesting Assistance from Microsoft>===================
+
+                              (1-206-454-2030)
+
+When reporting problems, the following information will help Microsoft
+resolve the problem quickly:
+
+*    The compiler version number (from the logo that appears on the screen
+     when you invoke the compiler with the FL command).
+
+*    The version of DOS you are running. Use the DOS "VER" command.
+
+*    Your system configuration (the machine, total memory, and total free
+     memory at compiler execution time). Use the DOS "CHKDSK" command.
+
+*    The command line used for compilation.
+
+*    All object files/libraries used to link, if necessary. You need not
+     use standard object files/libraries, but please specify which ones you
+     did use.
+
+Please have this information ready when you call.
+
+
+
+=================================<Contents>==================================
+
+This file has five parts:
+
+     Part    Note
+     ----    ----
+     1       Additional information about the SETUP program
+     2       Changes and additions to "Microsoft FORTRAN Reference"
+     3       Changes and additions to "Microsoft FORTRAN Advanced Topics"
+     4       Changes and additions to "Microsoft Editor User's Guide"
+     5       Changes and additions to "Microsoft CodeView(R) and Utilities
+             User's Guide"
+
+
+
+=========================<Part 1: The SETUP Program>=========================
+
+
+Disk Space for Additional Libraries
+-----------------------------------
+
+    Each library for a different combination of memory model and floating-
+    point arithmetic requires up to 220K of disk space. If you intend to
+    create more than one library when running SETUP, be sure to take into
+    account the additional disk space required.
+
+
+Standard and High-Density Disks
+-------------------------------
+
+    If you select full installation for OS/2 Protected Mode (as opposed to
+    creating only protected-mode libraries), SETUP prompts you to insert
+    high-density disks. See PACKING.LST on the SETUP disk for the specific
+    disk layout.
+
+
+File Facility Program
+---------------------
+
+    SETUP does not support the IBM File Facility utility program (or any
+    similar programs that search for data files). They should be removed
+    before running SETUP.
+
+
+
+====================<Part 2: Microsoft FORTRAN Reference>====================
+
+
+$NOTRUNCATE Metacommand
+-----------------------
+
+    $NOTRUNCATE is now the default. As a result, it is possible to create
+    variable names, common block names, and function or subroutine names that
+    are longer than the 26-character space allotted in a .LST file. If these
+    identifiers do not differ in the first 26 characters, the .LST file shows
+    them with the same name.
+
+
+New NINT Functions
+------------------
+
+    Three NINT intrinsic functions have been added: NINT1, NINT2, and NINT4.
+    These return integer values of one, two, and four bytes respectively.
+
+
+The /4I2 Switch and the INT and NINT Functions
+----------------------------------------------
+
+    The length of the value returned by the INT and NINT intrinsic functions
+    is determined by the integer storage switch: two bytes if /4I2 is used,
+    four bytes if /4I4 (the default) is used.
+
+    If you want these functions to return a value with a length different
+    from the length set by the integer storage switch, use INT1, INT2, or
+    INT4 instead of INT, and use NINT1, NINT2, or NINT4 instead of NINT.
+
+
+Interaction of AUTOMATIC Variables and the Large Memory Model
+-------------------------------------------------------------
+
+    The $LARGE metacommand overrides the /4Ya switch or an AUTOMATIC command
+    without specified variables. All arrays are made FAR or HUGE, rather than
+    being placed on the stack.
+
+
+80387 Coprocessor Instructions
+------------------------------
+
+    The run-time libraries recognize the presence of an 80387 coprocessor. If
+    you are not using the alternate math package, the library uses the 80387
+    SIN and COS instructions, rather than deriving sines and cosines from the
+    FPTAN instruction.
+
+
+Array Conformity in Functions and Subroutines
+---------------------------------------------
+
+    A formal array argument in a subroutine or function does not have to have
+    the same number of dimensions or total size as the actual array argument
+    passed to it. This permits the procedure to contain a formal array that
+    is as large as you think you will ever need; the calling program can then
+    pass any array of the same size or smaller.
+
+    Note, however, that if the formal and actual dimensions do not match in
+    quantity and size, the formal array elements do not point to the same
+    memory locations as the actual array elements with the same subscripts.
+    In this case, your program has to calculate the correct subscripts.
+
+
+Reading and Writing RECORD (structure) Variables
+------------------------------------------------
+
+    Section 1.4 of the Microsoft FORTRAN Reference, "Records," states that
+    structure variables may not be written as a whole to files. This is true
+    only for formatted reads and writes. A whole structure variable may be
+    written or read in unformatted form.
+
+
+"Out of Memory" Error Message
+-----------------------------
+
+    This compiler error does not have an error number. It occurs when the
+    FL program does not have sufficient memory, as in the following cases:
+
+    1. You used wildcard characters to specify the files to be compiled
+       (for example, FL *.FOR) and there were too many files. The exact
+       number of files that can be handled depends on the amount of system
+       memory.
+    2. The computer did not have enough free memory. This may occur when
+       other processes are running under Microsoft Windows or OS/2.
+
+
+Additional Compiler Error Messages
+----------------------------------
+
+    F2399: <name> : COMMON (or EQUIVALENCE) : automatic variable illegal.
+
+    A variable previously declared as AUTOMATIC cannot appear in a COMMON
+    block or an EQUIVALENCE statement.
+
+
+    F4187: Debugging information exceeds 64K - extra ignored.
+
+    There was more debugging information than could fit in the allotted 64K
+    space. The additional information (which is usually symbols) was
+    discarded.
+
+
+Revised Compiler Error Message
+------------------------------
+
+    The <attribute> in error message F2384 can be "common block" or
+    "equivalenced," in addition to ALLOCATABLE, EXTERN, FAR, or HUGE.
+
+
+Linker Path Specification
+-------------------------
+
+    The /link option does not allow you to specify the linker's path. FL
+    assumes the linker is in the same directory as the compiler.
+
+
+Linker EXEPACK Option
+---------------------
+
+    You can create a packed executable (.EXE) file by specifying the /E
+    (EXEPACK) linker option.
+
+
+Linker Error Message Corrections
+--------------------------------
+
+    error L1006   /STACK : stack size exceeds 65535 bytes
+
+    The value given as a parameter to the /STACK option exceeds the maximum.
+
+
+    error L1041   resident-name table overflow
+
+    The resident-name table exceeds 65,534 bytes. (An entry in the resident-
+    name table is made for each exported routine without a designated
+    ordinal, or with an ordinal if RESIDENTNAME is given. An entry consists
+    of the name plus three bytes of information. The first entry is the
+    module name.)
+
+
+    error L1042   nonresident-name table overflow
+
+    The nonresident-name table exceeds 65,534 bytes. (An entry in the
+    nonresident-name table is made for each exported routine which designates
+    an ordinal and does not say RESIDENTNAME. The entry consists of the name
+    plus three bytes of information. The first entry is the DESCRIPTION
+    statement.)
+
+    Errors L1041 and L1042 can be handled by reducing the number of exported
+    routines, or by changing some of them to resident status.
+
+
+Reserved File Names
+-------------------
+
+    The following file names are reserved for operating system devices. If
+    one of these names is specified in the FILE= option of a FORTRAN OPEN
+    statement, the connection is always to the device, even if a disk file
+    with the same name already exists.
+
+    File Name     Device
+    ---------     ------
+
+    AUX           communications port (COM1)
+    COM1          communications port
+    CON           keyboard and screen
+    ERR           standard error output (screen)
+    LINE          communications port (COM1)
+    LPT1          printer
+    NUL           null device
+    PRN           printer (LPT1)
+    USER          keyboard and screen
+
+    You can use READ and WRITE statements (as appropriate) to access these
+    devices, and CLOSE statements to disconnect them, just as you would with
+    other files. FORTRAN carriage-control characters are recognized for
+    these devices.
+
+    We recommend that you not use the names of these devices for disk files. 
+
+
+FL Switch Default Values
+------------------------
+
+    If no switches appear in the FL command line, the source code is compiled
+    with the following defaults:
+
+    1. The Large memory model is used
+    2. The 8086/8088 instruction set is used
+    3. 8087/287/387 in-line instructions are used for floating-point
+       calculations
+    4. Variable, subroutine, or function names are not truncated
+    5. All integer and single-precision floating-point numbers are four bytes
+    6. All Microsoft extensions to FORTRAN are enabled
+    7. FORTRAN 66-style DO statements are disabled
+    8. Full optimization is performed
+    9. Debugging (extended run-time error handling) is disabled
+
+    Any metacommands in a source code file override these defaults.
+
+
+Default Stack Size
+------------------
+
+   The default stack size is 2,048 bytes (hexadecimal #800). This value can
+   be changed with the /F option when running FL, or the /STACK option when
+   running LINK.
+
+
+Compiling Extremely Large Programs
+----------------------------------
+
+    This release has an additional disk labeled HIGH-CAPACITY COMPILER,
+    which contains an alternate form of the Compiler Pass 1 named F1L.EXE.
+    SETUP does not install F1L.EXE; you must copy it from the distribution
+    disk if you need it.
+
+    This compiler pass is used to compile programs that receive error message
+    "F1901: program too large for memory." The F1L.EXE pass is invoked by
+    adding the /B1 option to the FL command line, as follows:
+
+        FL  /B1  <path>\F1L.EXE  <sourcefile>.FOR
+
+    where <path> is the path (including drive and directory) where F1L.EXE
+    resides, and <sourcefile> is the name of the FORTRAN source file you are
+    compiling. Alternatively, you can rename F1L.EXE to F1.EXE to make the
+    high-capacity version the default.
+
+
+
+=================<Part 3: Microsoft FORTRAN Advanced Topics>=================
+
+
+Page     Note
+----     ----
+ 191     The plus sign (+) used as a continuation character in front of the
+         WRITE statement should be removed.
+
+
+Huge Arrays in Bound Programs under DOS
+---------------------------------------
+
+    If a huge array is initialized with DATA statements, and the program is
+    bound, the array will not be properly initialized when the program is run
+    under DOS or OS/2 real mode. The array is properly initialized when the
+    program runs under OS/2 protected mode. This is due to a problem with the
+    OS/2 version 1.1 API.LIB.
+
+    There are two workarounds:
+
+    1. Initialize the huge array with assignment statements.
+
+    2. Instead of binding the program, build a "dual-mode" executable file.
+
+       Compile and link your program for real mode. Then insert the following
+       statement in your definitions file (or create a definitions file with
+       this statement):
+
+       STUB '<file>.EXE'
+
+       where <file> is the base name of the real-mode executable file you
+       created.
+
+       Compile and link the program a second time for protected mode,
+       specifying this definitions file. Be sure to select a different base
+       name for the .EXE file, so that this protected-mode version will not
+       overwrite the real-mode version.
+
+       The resulting executable file now contains both a real-mode and a
+       protected-mode program (rather than a single bound program). The
+       appropriate program is automatically loaded at run time.
+
+
+Hercules(R) Graphics Support
+----------------------------
+
+    This release of Microsoft FORTRAN supports the Hercules(R) display
+    adapter. This is a brief summary of the feature:
+
+    1. The Hercules Graphics Card, Graphics Card Plus, InColor(TM) Card, and
+       100%-compatible cards are supported.
+
+    2. Only monochrome text and graphics are supported. The screen resolution
+       is 720 x 348 pixels. The text dimensions are 80 columns by 25 rows,
+       with a 9 x 14 character box. The bottom two scan lines of the 25th row
+       are not visible.
+
+    3. You must load the Hercules driver MSHERC.COM before running your
+       program. Place this driver in one of the directories specified in the
+       system PATH environment variable, then type MSHERC at the command line
+       prompt. You can also add this command to your AUTOEXEC.BAT file.
+
+       If you have both a Hercules monochrome card and a color video card you
+       should invoke MSHERC.COM with the /H (/HALF) option. The /H option
+       limits the driver to a single graphics page, so that the two cards do
+       not attempt to use the same memory.
+
+       If you develop commercial applications that use graphics, you should
+       include MSHERC.COM with your products. A license is not required.
+       (MSHERC.COM is identical to QBHERC.COM, the Hercules driver supplied
+       with Microsoft QuickBASIC 4.0 and Microsoft BASIC Compiler 6.0.)
+
+    4. To use a mouse, you must follow the special instructions for Hercules
+       cards in the Microsoft Mouse Programmer's Reference Guide. (This
+       product must be ordered separately. It is not supplied with Microsoft
+       FORTRAN or the Microsoft Mouse package.)
+
+    5. In the file FGRAPH.FD, the manifest constant $HERCMONO sets the video
+       mode to 720 x 348 monochrome for Hercules graphics, and the constant
+       $HGC has been added in the section "videoconfig adapter values."
+
+
+Calling the Graphics Libraries
+------------------------------
+
+    Unlike the FORTRAN intrinsic functions, which the linker recognizes and
+    automatically searches for in the libraries, the linker has no record of
+    the names of the graphics library routines. Therefore, the appropriate
+    graphics library must be explicitly specified in the FL command line or
+    when linking manually. You do not need to use the /link switch. For
+    example, the following FL command line compiles the source file FONTS.FOR
+    and links it with GRAPHICS.LIB:
+
+        FL  FONTS.FOR  GRAPHICS.LIB
+
+
+Additional Graphics Routines
+----------------------------
+
+    Two routines have been added to the graphics library.
+
+    ScrollTextWindow (lines)
+    ------------------------
+
+    The ScrollTextWindow subroutine scrolls text within the defined text
+    window. Any text or graphics outside the window is unaffected.
+    ScrollTextWindow takes a single integer argument which equals the number
+    of lines to be scrolled. Positive values scroll the screen up; negative
+    values scroll the screen down.
+
+    GetTextWindow (r1, c1, r2, c2)
+    ------------------------------
+
+    The GetTextWindow subroutine takes four integer arguments, which return
+    the upper-left-hand and lower-right-hand corner boundaries of the current
+    text window (as established by SetTextWindow). The first two are the row
+    and column of the upper-left-hand corner. The second two are the row
+    and column of the lower-right-hand corner.
+
+
+Proper Use of Include Files with IMPLICIT NONE
+----------------------------------------------
+
+    If you use both IMPLICIT NONE and INCLUDE 'FGRAPH.FI', the correct order
+    is
+
+        INCLUDE 'FGRAPH.FI'
+        IMPLICIT NONE
+
+    Here is a sample file with two subroutines and a main program. (The
+    PROGRAM Main statement is still optional but using it if you also use
+    IMPLICIT NONE is clearer.) Note that INCLUDE 'FGRAPH.FI' appears once
+    per file, while INCLUDE 'FGRAPH.FD' appears once in each routine.
+
+        INCLUDE 'FGRAPH.FI'
+        PROGRAM  Main
+        IMPLICIT NONE
+        INCLUDE 'FGRAPH.FD'
+           .
+           .
+           .
+        END
+
+
+        SUBROUTINE  One
+        IMPLICIT NONE
+        INCLUDE 'FGRAPH.FD'
+           .
+           .
+           .
+        END
+
+
+        SUBROUTINE  Two
+        IMPLICIT NONE
+        INCLUDE 'FGRAPH.FD'
+           .
+           .
+           .
+        END
+
+
+
+===================<Part 4: Microsoft Editor User's Guide>===================
+
+
+Version 1.02 (shipped with FORTRAN)
+
+Autostart Mode
+--------------
+
+    If an "autostart" assignment appears in the TOOLS.INI file, the macro on
+    the right of the assignment is executed automatically each time the
+    editor is run. An autostart assignment takes the form
+
+        autostart:=macro
+
+    where macro is any valid Microsoft Editor function assignment, switch
+    setting, or macro.
+
+
+Stream Mode Default
+-------------------
+
+    The editor now always starts in stream mode, regardless of the mode set
+    when you exited.
+
+
+enterboxmode Switch
+-------------------
+
+    The enterboxmode switch, when set to "yes," starts the editor in box
+    mode. Its default value is "no."
+
+
+Setting Editor Modes
+--------------------
+
+    Some editor modes are set with functions that toggle the mode between two
+    states, rather than setting the mode directly. For example, the boxstream
+    function switches between box mode and stream mode; it does not set
+    either mode directly.
+
+    This inability to set the mode directly can cause problems if you want to
+    use an autostart command to set a specific mode (for example, stream)
+    every time the editor is run. There is no default status for boxstream;
+    the current status is retained when you exit. Consequently, an
+    autostart:=boxstream statement in TOOLS.INI toggles the existing mode,
+    whether it's box or stream.
+
+    The boxstream function returns a TRUE/FALSE flag indicating the
+    function's status. In the case of boxstream, TRUE is returned if the mode
+    was set to box, FALSE if it was set to stream. You can test this flag and
+    use the test results to determine whether boxstream should be called a
+    second time to reset the mode to the desired value.
+
+    For example, suppose you want the editor to always start up in stream
+    mode. You would enter the following autostart macro in your TOOLS.INI
+    file:
+
+        autostart:=boxstream -> boxstream
+
+    The initial call to the boxstream function toggles the existing mode to
+    either box or stream. The macro conditional -> terminates the macro if
+    the returned value is FALSE. Therefore, if the initial boxstream command
+    switched to stream mode, FALSE is returned and the macro terminates. If
+    the initial boxstream command switched to box mode, TRUE is returned, the
+    macro does not terminate, and the boxstream function is repeated to
+    toggle the mode to stream. Regardless of the initial condition, you are
+    now in stream mode.
+
+
+Default Values for Help Switches
+--------------------------------
+
+    There are four switches that set the text colors for Help files:
+    helpboldcolor, helpitalcolor, helpundcolor, and helpwarncolor. The value
+    you specify for the high-order digit of these colors is automatically
+    replaced by the high-order digit of the value for the fgcolor switch.
+    This replacement assures that one of the Help colors always matches one
+    of the foreground colors, to promote visual consistency.
+
+
+
+===========<Part 5: Microsoft CodeView and Utilities User's Guide>===========
+
+
+CodeView Support for FORTRAN Record Variables
+---------------------------------------------
+
+    CodeView 2.3 supports the display of record elements as well as ordinary
+    variables. For example, if the record variable 'employee' is declared
+    with the following structure
+
+        STRUCTURE /emprec/
+           INTEGER       years
+           REAL          raises(10)
+           CHARACTER*10  empname(3)
+        END STRUCTURE
+
+        RECORD /emprec/ employee
+
+    the elements of 'employee' can be displayed individually. The CodeView
+    command
+
+        ?employee.raises(2)
+
+    displays the current value of the second array member of the record
+    element 'raises' of the record variable 'employee'.
+
+
+
+ERROUT Utility
+--------------
+
+    The ERROUT utility is no longer supplied with Microsoft FORTRAN. All
+    compiler, linker, and utility error messages are now directed to "stdout"
+    instead of "stderr," so DOS redirection may be used to write error
+    messages to any file. The header information (product name, version
+    number, and Microsoft copyright notice) is still sent to "stderr."
+
+
+EXEPACK Utility
+---------------
+
+    The EXEPACK utility is no longer supplied with Microsoft FORTRAN. Use the
+    /E link option to create a packed executable file.
+
+
+NMAKE Utility
+-------------
+
+    The MAKE utility has been replaced with the NMAKE utility. NMAKE is not
+    compatible with existing MAKE files. Please read the section on NMAKE
+    before running MAKE files.

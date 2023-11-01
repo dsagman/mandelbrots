@@ -1,0 +1,604 @@
+FGRAPH - a Forth interface for Fastgraph/Light 3.x/4.x
+------------------------------------------------------
+
+FGRAPH is a Forth interface for 'Fastgraph' (Ted Gruber Software)
+graphics library.
+
+FGRAPH was adapted from TFGRAF by M.Petremann & P.Guillaumaud.
+
+
+                        *** PLEASE NOTE ***
+
+Only the Forth interface 'FGRAPH' is provided.  Users will need to
+obtain the Fastgraph driver FGDRIVER.EXE which is included in the
+Fastgraph/Light 4.04 shareware package (fgl404*.zip).  Fastgraph/Light
+is available from SIMTEL download sites or the Fastgraph website.
+
+In addition the demo program FISHTANK.EXE requires two support files
+FISH.PPR and CORAL.PPR.  These are not supplied for copyright reasons
+but are included with the Fastgraph/Light package mentioned above.
+
+"Fastgraph/Light" is a product of Ted Gruber Software.  For details
+on the legal use of the Fastgraph driver, please refer to the
+documentation supplied with the Fastgraph/Light package.
+
+
+1. Introduction
+
+'Fastgraph' is a full-featured library containing over 200 graphic and
+video functions.  It is well suited for graphics and animation tasks
+and includes functions for keyboard, mouse and joystick.
+
+In Fastgraph/Light, the graphics library is supplied as a memory-
+resident driver FGDRIVER.EXE which applications can access via a
+suitable interface.  The Fastgraph package contains interfaces for
+C, BASIC and FORTRAN but, alas, not Forth.
+
+FGRAPH.SCR contains the source code for a machine-code interface to
+allow Forth-based applications access to the Fastgraph functions.
+ 
+FGRAPH (the Forth interface only) is public domain and is supplied
+as is.  There is no warranty and its use is at your own risk.
+
+
+2. Implementation
+
+The Forth interface implements all Fastgraph/Light 3.x and 4.x
+functions.
+
+As is usual with Forth, function parameters and results are kept on
+the stack rather than in variables.  In most cases, the number and
+order of items is the same as their Fastgraph C/BASIC/FORTRAN
+counterparts.  This makes it easy for users to read the Fastgraph
+documentation and program examples and relate them directly to Forth.
+
+In the translation to Forth however, certain changes were found to
+be desirable:
+
+- Some functions have had their syntax altered to make them easier
+  to use in a Forth environment.  These are:
+
+  FLICKSIZE GETBANKS GETCLIP GETENTRY GETKEY GETRGB GETVIEW INTJOY
+  INTKEY MOUSEBUT MOUSEPOS PXCRANGE SVGAVER VERSION FGWHERE
+
+  In C/BASIC/FORTRAN the results of these functions are returned
+  in variables whereas in the Forth version they are returned
+  directly on the stack.
+
+- Fastgraph function names that conflict with existing Forth words
+  have 'FG' prefixed to the name.
+
+
+3. Installation
+
+The Forth interface is supplied in source form as file FGRAPH.SCR.
+Loading is done with:
+
+    1 FLOAD FGRAPH  ( .SCR is assumed )
+
+By default, Fastgraph 4.x functions will be loaded.  Users wishing
+to use the Fastgraph 3.x functions and driver instead (e.g. because
+they take somewhat less memory), should change the statement on
+Screen 2 from 'true value FG4' to 'false value FG4' and reload.
+
+
+4. Usage
+
+Before Fastgraph functions can be used, the Fastgraph driver must be
+resident in memory.  This is done by executing FGDRIVER.EXE before
+entering Forth or running a Fastgraph application.
+
+The syntax of Forth Fastgraph functions is summarized in the sections
+below.  For a comprehensive description of Fastgraph functions and
+their usage, please refer to the documentation included in the
+Fastgraph/Light package.
+
+
+5. Standard Fastgraph functions
+
+Fastgraph/Light functions:
+
+  ALLOCATE   ( page_number -- 0 | error )
+  ALLOCCMS   ( page_number -- 0 | error )
+  ALLOCEMS   ( page_number -- 0 | error )
+  ALLOCXMS   ( page_number -- 0 | error )
+  AUTOMODE   ( -- n )
+  BESTMODE   ( horizontal vertical pages -- n | -1 )
+  BOX        ( minx maxx miny maxy -- )
+  BOXDEPTH   ( xdepth ydepth -- )
+  BOXX       ( minx maxx miny maxy -- )
+  BUTTON     ( n -- status )
+  CAPSLOCK   ( -- 0 | 1 )
+  CHGATTR    ( n -- )
+  CHGTEXT    ( adr_string n -- )
+  CIRCLE     ( radius -- )
+  CIRCLEF    ( radius -- )
+* CLIPMAP    ( adr_map_array width height -- )
+  CLIPMASK   ( adr_map_array runs width -- )
+  CLPIMAGE   ( adr_map_array width height -- )
+  CLPRECT    ( minx maxx miny maxy -- )
+* COLORS     ( -- n )
+  COPYPAGE   ( source_page dest_page -- )
+  CURSOR     ( state -- )
+  DASH       ( ix iy pattern -- )
+  DASHREL    ( ix iy pattern -- )
+  DEFCOLOR   ( index value -- )
+  DEFPAGES   ( source_page dest_page -- )
+  DISPFILE   ( adr_filename width format -- )
+  DISPLAY    ( adr_map_array runs width -- )
+  DISPLAYP   ( adr_map_array runs width -- )
+  DRAW       ( ix iy -- )
+  DRAWMAP    ( adr_map_array width height -- )
+  DRAWMASK   ( adr_map_array runs width -- )
+  DRAWREL    ( ix iy -- )
+  DRAWRELX   ( ix iy -- )
+  DRAWX      ( ix iy -- )
+  DRECT      ( minx maxx miny maxy adr_matrix -- )
+  DRWIMAGE   ( adr_map_array width height -- )
+  EGACHECK   ( -- n | 0 )
+  ELLIPSE    ( horiz vert -- )
+  ELLIPSEF   ( horiz vert -- )
+  FADEIN     ( delay -- )
+  FADEOUT    ( delay -- )
+  FGERASE    ( -- )
+  FILLPAGE   ( -- )
+* FINDPAGE   ( -- n | 0 )
+* FLICDONE   ( adr_context -- )
+* FLICHEAD   ( adr_filename adr_header -- 0 | error )
+* FLICMODE   ( adr_header -- n | -1 )
+* FLICOPEN   ( adr_filename adr_context -- 0 | error )
+* FLICPLAY   ( adr_context frames flags -- n )
+* FLICSIZE   ( adr_header -- width height )
+* FLICSKIP   ( adr_context frames -- n )
+  FLIPMASK   ( adr_map_array runs width -- )
+  FLOOD      ( ix iy -- )
+  FLPIMAGE   ( adr_map_array width height -- )
+  FONTSIZE   ( char_height -- )
+  FREEPAGE   ( page_number -- 0 | error )
+  GETADDR    ( -- segment )
+  GETATTR    ( row column -- n )
+* GETBANKS   ( -- read_bank write_bank )
+  GETBLOCK   ( segment offset minx maxx miny maxy -- )
+  GETCHAR    ( row column -- n )
+* GETCLIP    ( -- minx maxx miny maxy )
+  GETCLOCK   ( -- d )
+  GETCOLOR   ( -- n )
+  GETDACS    ( start count adr_values -- )
+  GETENTRY   ( page_number -- page_addr page_type )
+  GETHPAGE   ( -- n )
+  GETIMAGE   ( adr_map_array width height -- )
+  GETINDEX   ( index -- n )
+  GETKEY     ( -- key aux )
+  GETLINES   ( -- n )
+  GETMAP     ( adr_map_array width height -- )
+  GETMAXX    ( -- n )
+  GETMAXY    ( -- n )
+  GETMODE    ( -- n )
+  GETPAGE    ( -- n )
+  GETPIXEL   ( ix iy -- n | -1 )
+  GETRGB     ( number -- red green blue )
+* GETVIEW    ( -- view_minx view_maxx view_miny view_maxy minx maxx
+               miny maxy )
+  GETVPAGE   ( -- n )
+* GETXBOX    ( -- n )
+  GETXJOY    ( n -- n2 | -1 )
+* GETXJUST   ( -- -1 | 0 | 1 )
+  GETXPOS    ( -- n )
+* GETYBOX    ( -- n )
+  GETYJOY    ( n -- n2 | -1 )
+* GETYJUST   ( -- status )
+  GETYPOS    ( -- n )
+  HUSH       ( -- )
+  HUSHNEXT   ( -- )
+  IMAGEBUF   ( segment offset size -- )
+  IMAGESIZ   ( width height -- d )
+  INITEMS    ( -- 0 | error )
+  INITJOY    ( n -- 0 | error )
+* INITPM     ( -- )
+  INITXMS    ( -- 0 | error )
+  INSIDE     ( adr_vertex_array n ix iy -- 0 | 1 )
+  INTJOY     ( n -- key aux )
+  INTKEY     ( -- key aux )
+* FGINVERT   ( adr_map_array width height -- )
+  JUSTIFY    ( xjust yjust -- )
+  KBINIT     ( state -- )
+* KBLAST     ( -- n | 0 )
+* KBRESET    ( -- )
+  KBTEST     ( scan_code -- 0 | 1 )
+* LOADPCX    ( adr_filename flags -- 0 | errcode )
+  LOCATE     ( row column -- )
+  MAKEPCX    ( minx maxx miny maxy adr_filename -- 0 | error )
+  MAKEPPR    ( minx maxx miny maxy adr_filename -- 0 | error )
+  MAKESPR    ( minx maxx miny maxy adr_filename -- 0 | error )
+  MAPRGB     ( red green blue -- n )
+  MEASURE    ( -- n )
+  MEMAVAIL   ( -- d )
+  MEMORY     ( -- n )
+* MOUSE256   ( adr_masks xoffset yoffset -- )
+  MOUSEBUT   ( number -- count lastx lasty -- )
+  MOUSECUR   ( screen_mask cursor_mask -- )
+  MOUSEFIN   ( -- )
+  MOUSEINI   ( -- n | -1 )
+  MOUSELIM   ( minx maxx miny maxy -- )
+  MOUSEMOV   ( ix iy -- )
+  MOUSEPOS   ( -- ix iy buttons )
+  MOUSEPTR   ( adr_mask xoffset yoffset -- )
+  MOUSESPD   ( xmickeys ymickeys -- )
+  MOUSEVIS   ( state -- )
+  FGMOVE     ( ix iy -- )
+  MOVEREL    ( ix iy -- )
+  MUSIC      ( adr_music_string -- )
+  MUSICB     ( adr_music_string ntimes -- )
+  NUMLOCK    ( -- 0 | 1 )
+* FGPACK     ( adr_source adr_dest width height -- )
+  PAGESIZE   ( -- d )
+  PAINT      ( ix iy -- )
+  PALETTE    ( number color -- )
+  PALETTES   ( adr_color_array -- )
+  PAN        ( ix iy -- )
+  PATTERN    ( index display_pattern -- )
+  PCXHEAD    ( adr_filename adr_pcx_header -- 0 | error )
+  PCXMODE    ( adr_pcx_header -- n | -1 | -2 )
+* PCXPAL     ( adr_filename adr_pcx_palette -- n | -1 | -2 )
+* PCXRANGE   ( adr_pcx_header -- minx maxx miny maxy )
+  PLAYING    ( -- 0 | 1 )
+  POINT      ( ix iy -- )
+  POINTX     ( ix iy -- )
+* POLYEDGE   ( edge_flag -- )
+  POLYFILL   ( adr_vertex_array adr_work_array n -- )
+  POLYGON    ( adr_ix_array adr_iy_array n -- )
+  POLYLINE   ( adr_vertex_array n -- )
+  POLYOFF    ( ix iy -- )
+  PRINT      ( adr_string n -- )
+* PRINTC     ( adr_string n -- )
+  PUTBLOCK   ( segment offset minx maxx miny maxy -- )
+  PUTIMAGE   ( adr_map_array width height -- )
+  QUIET      ( -- )
+  RECT       ( minx maxx miny maxy -- )
+  RESET      ( -- )
+  RESIZE     ( width height -- )
+  RESTORE    ( minx maxx miny maxy -- )
+  RESUME     ( -- )
+  REVIMAGE   ( adr_map_array width height -- )
+  REVMASK    ( adr_map_array runs width -- )
+  FGSAVE     ( minx maxx miny maxy -- )
+* SCALE      ( adr_source adr_dest sw sh dw dh -- )
+  SCRLOCK    ( -- 0 | 1 )
+  SCROLL     ( minx maxx miny maxy jump type -- )
+  SETATTR    ( foreground background blink -- )
+* SETBANKS   ( read_bank write_bank -- )
+  SETCAPS    ( status -- )
+  SETCLIP    ( minx maxx miny maxy -- )
+  SETCOLOR   ( color -- )
+  SETDACS    ( start count adr_values -- )
+  SETENTRY   ( page_number page_addr page_type -- )
+  SETFUNC    ( mode -- )
+  SETHPAGE   ( page_number -- )
+  SETLINES   ( lines -- )
+  SETMODE    ( mode_number -- )
+  SETNUM     ( state -- )
+  SETPAGE    ( page_number -- )
+  SETRGB     ( number red green blue -- )
+* SETVIEW    ( adr_view_minx adr_view_maxx adr_view_miny adr_view_maxy
+               minx maxx miny maxy -- )
+  SETVPAGE   ( page_number -- )
+* SHEAR      ( adr_source adr_dest width height new_size type -- )
+* SHOWFLIC   ( adr_filename count flags -- 0 | error )
+  SHOWPCX    ( adr_filename flags -- 0 | error )
+  SHOWPPR    ( adr_filename width -- 0 | error )
+  SHOWSPR    ( adr_filename width -- 0 | error )
+  FGSOUND    ( frequency duration -- )
+  SOUNDS     ( adr_sound_array ntimes -- )
+* SPLIT      ( iy -- )
+  STALL      ( delay -- )
+  SUSPEND    ( -- )
+  SVGAINIT   ( method -- n | 0 )
+  SVGASTAT   ( -- n )
+  SVGAVER    ( -- major minor )
+  TCDEFINE   ( index attribute -- )
+  TCMASK     ( mask -- )
+  TCXFER     ( minx maxx miny maxy newx newy source_page dest_page -- )
+  TESTMODE   ( mode pages -- 1 | 0 )
+  TEXT       ( adr_string n -- )
+* TEXTC      ( adr_string n -- )
+  TRANSFER   ( minx maxx miny maxy newx newy source_page dest_page -- )
+* UNPACK     ( source dest size -- )
+* VBADDR     ( handle -- segment offset )
+* VBALLOC    ( width height -- handle | -1 | -2 )
+* VBCLOSE    ( -- )
+* VBCOPY     ( minx maxx miny maxy newx newy source dest -- )
+* VBCUT      ( minx maxx miny maxy newx newy -- )
+* VBDEFINE   ( segment offset width height -- handle | -1 )
+* VBFREE     ( handle -- )
+* VBHANDLE   ( -- handle | -1 )
+* VBINIT     ( -- )
+* VBOPEN     ( handle -- 0 | error )
+* VBPASTE    ( minx maxx miny maxy newx newy -- )
+* VBTCCOPY   ( minx maxx miny maxy newx newy source dest -- )
+* VBTCXFER   ( minx maxx miny maxy newx newy -- )
+* VBUNDEF    ( handle -- )
+  VERSION    ( -- major minor )
+* VGASTATE   ( option -- )
+  VOICE      ( channel frequency volume duration -- )
+  VOICES     ( adr_sound_array ntimes -- )
+  WAITFOR    ( ticks -- )
+  WAITKEY    ( -- )
+  WAITVR     ( state -- )
+  FGWHERE    ( -- row column )
+  XALPHA     ( ix -- n | ix )
+  XCONVERT   ( column -- n | column )
+* XVIEW      ( vx -- n | vx )
+  YALPHA     ( iy -- n | iy )
+  YCONVERT   ( row -- n | row )
+* YVIEW      ( vy -- n | vy )
+
+(*) function available only in Fastgraph 4.x
+
+where:
+  n             16-bit value
+  d             32-bit value
+  adr           address
+
+  addresses that represent a filename are expected to hold a null-
+  terminated string
+
+
+6. Additional functions
+
+In addition to the standard Fastgraph/Light functions, two additional
+functions are provided.
+
+  FGTEST     ( -- 0 | 1 | 2 )
+  FGVER      ( -- major minor )
+
+The C/BASIC/FORTRAN interfaces supplied with Fastgraph include a test
+to determine whether the Fastgraph driver is installed.  The built-in
+test has two problems - it executes each time a function call is made;
+it does not check whether the driver and interface versions are
+compatible.
+
+To overcome this, the Forth interface provides FGTEST and FGVER.
+
+FGTEST tests the status of the system and returns a code as follows:
+
+   0 = success (Fastgraph driver is resident and compatible with
+       the Forth interface)
+   1 = Fastgraph/Light driver not installed
+   2 = incompatible version (e.g. Fastgraph driver is resident
+       but is not the version the Forth interface expects).
+
+FGTEST must be executed at the start of an application BEFORE any
+other Fastgraph function is called.  If it returns a non-zero value
+your application should display a suitable message and abort e.g.
+
+   FGTEST ABORT" FASTGRAPH driver not installed/wrong version"
+
+Fastgraph includes a function called VERSION.  Contrary to what the
+manual says, VERSION does not return the driver version number -
+rather it returns the version number of the interface.  FGVER properly
+interrogates the Fastgraph driver in order to get the version number.
+
+Important: FGVER will ONLY return a meaningful value if FGTEST was
+previously executed and it returned codes 0 or 2.
+
+
+7. Notes
+
+- FGTEST FGVER and VERSION are the only functions that may be safely
+  called at any time - all other Fastgraph functions assume that the
+  Fastgraph/Light driver is installed and has the correct version.
+
+
+8. Reference
+
+Function Summary:
+
+  Video Initialization
+
+  AUTOMODE      GETLINES      RESET         SVGASTAT
+  BESTMODE      GETMODE       SETLINES      TESTMODE
+  CURSOR        INITPM        SETMODE
+  EGACHECK      MEMORY        SVGAINIT
+
+  Coordinate
+
+  GETMAXX       SETVIEW       XVIEW         YVIEW
+  GETMAXY       XALPHA        YALPHA
+  GETVIEW       XCONVERT      YCONVERT
+
+  Color-Related
+
+  COLORS        GETINDEX      PALETTES      SETRGB
+  DEFCOLOR      GETRGB        SETATTR
+  GETCOLOR      MAPRGB        SETCOLOR
+  GETDACS       PALETTE       SETDACS
+
+  Fundamental Graphics
+
+  BOX           DRAWRELX      GETXBOX       POLYEDGE
+  BOXDEPTH      DRAWX         GETXPOS       POLYFILL
+  BOXX          DRECT         GETYBOX       POLYGON
+  CIRCLE        ELLIPSE       GETYPOS       POLYLINE
+  CIRCLEF       ELLIPSEF      INSIDE        POLYOFF
+  CLPRECT       FGERASE       FGMOVE        RECT
+  DASH          FILLPAGE      MOVEREL       SETCLIP
+  DASHREL       FLOOD         PAINT
+  DRAW          GETCLIP       POINT
+  DRAWREL       GETPIXEL      POINTX
+
+  Character Display
+
+  CHGATTR       GETXJUST      PRINTC        FGWHERE
+  CHGTEXT       GETYJUST      SETATTR       XALPHA
+  FONTSIZE      JUSTIFY       SETCOLOR      XCONVERT
+  GETATTR       LOCATE        TEXT          YALPHA
+  GETCHAR       PRINT         TEXTC         YCONVERT
+
+  Video Page And Virtual Buffer
+
+  ALLOCATE      GETENTRY      SETHPAGE      VBFREE
+  ALLOCCMS      GETHPAGE      SETPAGE       VBHANDLE
+  ALLOCEMS      GETPAGE       SETVPAGE      VBINIT
+  ALLOCXMS      GETVPAGE      VBADDR        VBOPEN
+  COPYPAGE      INITEMS       VBALLOC       VBPASTE
+  DEFPAGES      INITXMS       VBCLOSE       VBTCCOPY
+  FINDPAGE      PAGESIZE      VBCOPY        VBTCXFER
+  FREEPAGE      RESIZE        VBCUT         VBUNDEF
+  GETADDR       SETENTRY      VBDEFINE
+
+  Image File
+
+  DISPFILE      FLICSIZE      MAKESPR       SHOWFLIC
+  FLICDONE      FLICSKIP      PATTERN       SHOWPCX
+  FLICHEAD      IMAGEBUF      PCXHEAD       SHOWPPR
+  FLICMODE      LOADPCX       PCXMODE       SHOWSPR
+  FLICOPEN      MAKEPCX       PCXPAL
+  FLICPLAY      MAKEPPR       PCXRANGE
+
+  Bitmapped Image
+
+  CLIPMAP       DRAWMASK      IMAGESIZ      SCALE
+  CLIPMASK      DRWIMAGE      FGINVERT      SHEAR
+  CLPIMAGE      FLIPMASK      FGPACK        UNPACK
+  DISPLAY       FLPIMAGE      PUTIMAGE
+  DISPLAYP      GETIMAGE      REVIMAGE
+  DRAWMAP       GETMAP        REVMASK
+
+  Block Transfer
+
+  COPYPAGE      SAVE          TRANSFER      VBTCCOPY
+  GETBLOCK      TCMASK        VBCOPY        VBTCXFER
+  PUTBLOCK      TCDEFINE      VBCUT
+  RESTORE       TCXFER        VBPASTE
+
+  Special Effects
+
+  FADEIN        PAN           SCROLL
+  FADEOUT       RESIZE        SPLIT
+
+  Input
+
+  BUTTON        INTKEY        MOUSECUR      MOUSESPD
+  CAPSLOCK      KBINIT        MOUSEFIN      MOUSEVIS
+  GETKEY        KBLAST        MOUSEINI      NUMLOCK
+  GETXJOY       KBRESET       MOUSELIM      SCRLOCK
+  GETYJOY       KBTEST        MOUSEMOV      SETCAPS
+  INITJOY       MOUSE256      MOUSEPOS      SETNUM
+  INTJOY        MOUSEBUT      MOUSEPTR      WAITKEY
+
+  Sound
+
+  HUSH          MUSICB        RESUME        SUSPEND
+  HUSHNEXT      PLAYING       FGSOUND       VOICE
+  MUSIC         QUIET         SOUNDS        VOICES
+
+  Timing
+
+  GETCLOCK      MEASURE       STALL         WAITFOR
+
+  Miscellaneous
+
+  GETBANKS      SETBANKS      SVGAVER       VGASTATE
+  MEMAVAIL      SETFUNC       VERSION       WAITVR
+
+
+9. Fastgraph driver details
+
+To access the Fastgraph/Light driver directly from machine-code,
+the function number is placed in register AX and INT 66h executed.
+The parameters are contained in cpu registers and/or in a table
+referenced by ES:BX.
+
+The function numbers for Fastgraph/Light version 3 and 4 are listed
+below:
+
+  Func      4.x  3.x     Func      4.x  3.x     Func      4.x  3.x
+  ----      ---  ---     ----      ---  ---     ----      ---  ---
+  ALLOCATE  00   00      GETPIXEL  4D   41      QUIET     9A   7F
+  ALLOCCMS  01   01      GETRGB    4E   42      RECT      9B   80
+  ALLOCEMS  02   02      GETVIEW   4F           RESET     9C   81
+  ALLOCXMS  03   03      GETVPAGE  50   43      RESIZE    9D   82
+  AUTOMODE  04   04      GETXBOX   51           RESTORE   9E   83
+  BESTMODE  05   05      GETXJOY   52   44      RESUME    9F   84
+  BOX       06   06      GETXJUST  53           REVIMAGE  A0   85
+  BOXDEPTH  07   07      GETXPOS   54   45      REVMASK   A1   86
+  BOXX      08   08      GETYBOX   55           FGSAVE    A2   87
+  BUTTON    09   09      GETYJOY   56   46      SCALE     A3
+  CAPSLOCK  0A   0A      GETYJUST  57           SCRLOCK   A4   88
+  CHGATTR   0B   0B      GETYPOS   58   47      SCROLL    A5   89
+  CHGTEXT   0C   0C      HUSH      59   48      SETATTR   A6   8A
+  CIRCLE    0D   0D      HUSHNEXT  5A   49      SETBANKS  A7
+  CIRCLEF   0E   0E      IMAGEBUF  5B   4A      SETCAPS   A8   8B
+  CLIPMAP   0F           IMAGESIZ  5C   4B      SETCLIP   A9   8C
+  CLIPMASK  10   0F      INITEMS   5D   4C      SETCOLOR  AA   8D
+  CLPIMAGE  11   10      INITJOY   5E   4D      SETDACS   AB   8E
+  CLPRECT   12   11      INITPM    5F           SETENTRY  AC   8F
+  COLORS    13           INITXMS   60   4E      SETFUNC   AD   90
+  COPYPAGE  14   12      INSIDE    61   4F      SETHPAGE  AE   91
+  CURSOR    15   13      INTJOY    62   50      SETLINES  AF   92
+  DASH      16   14      INTKEY    63   51      SETMODE   B0   93
+  DASHREL   17   15      FGINVERT  64           SETNUM    B1   94
+  DEFCOLOR  18   16      JUSTIFY   65   52      SETPAGE   B2   95
+  DEFPAGES  19   17      KBINIT    66   53      SETRGB    B3   96
+  DISPFILE  1A   18      KBLAST    67           SETVIEW   B5
+  DISPLAY   1B   19      KBRESET   68           SETVPAGE  B6   98
+  DISPLAYP  1C   1A      KBTEST    69   54      SHEAR     B7
+  DRAW      1D   1B      LOADPCX   6A           SHOWFLIC  B8
+  DRAWMAP   1E   1C      LOCATE    6B   55      SHOWPCX   B9   9A
+  DRAWMASK  1F   1D      MAKEPCX   6C   57      SHOWPPR   BA   9B
+  DRAWREL   20   1E      MAKEPPR   6D   58      SHOWSPR   BB   9C
+  DRAWRELX  21   1F      MAKESPR   6E   59      FGSOUND   BC   9D
+  DRAWX     22   20      MAPRGB    6F   5A      SOUNDS    BD   9E
+  DRECT     23   21      MEASURE   70   5B      SPLIT     BE
+  DRWIMAGE  24   22      MEMAVAIL  71   5C      STALL     BF   9F
+  EGACHECK  25   23      MEMORY    72   5D      SUSPEND   C0   A0
+  ELLIPSE   26   24      MOUSE256  73           SVGAINIT  C1   A1
+  ELLIPSEF  27   25      MOUSEBUT  74   5E      SVGASTAT  C2   A2
+  FGERASE   28   26      MOUSECUR  75   5F      SVGAVER   C3   A3
+  FADEIN    29   27      MOUSEFIN  76   60      TCDEFINE  C4   A4
+  FADEOUT   2A   28      MOUSEINI  77   61      TCMASK    C5   A5
+  FILLPAGE  2B   29      MOUSELIM  78   62      TCXFER    C6   A6
+  FINDPAGE  2C           MOUSEMOV  79   63      TESTMODE  C7   A7
+  FLICDONE  2D           MOUSEPOS  7A   64      TEXT      C8   A8
+  FLICHEAD  2E           MOUSEPTR  7B   65      TEXTC     C9
+  FLICMODE  2F           MOUSESPD  7C   66      TRANSFER  CA   A9
+  FLICOPEN  30           MOUSEVIS  7D   67      UNPACK    CB
+  FLICPLAY  31           FGMOVE    7E   68      VBADDR    CC
+  FLICSIZE  32           MOVEREL   7F   69      VBALLOC   CD
+  FLICSKIP  33           MUSIC     80   6A      VBCLOSE   CE
+  FLIPMASK  34   2A      MUSICB    81   6B      VBCOPY    CF
+  FLOOD     35   2B      NUMLOCK   82   6C      VBCUT     D0
+  FLPIMAGE  36   2C      FGPACK    83           VBDEFINE  D1
+  FONTSIZE  37   2D      PAGESIZE  84   6D      VBFREE    D2
+  FREEPAGE  38   2E      PAINT     85   6E      VBHANDLE  D3
+  GETADDR   39   2F      PALETTE   86   6F      VBINIT    D4
+  GETATTR   3A   30      PALETTES  87   70      VBOPEN    D5
+  GETBANKS  3B           PAN       88   71      VBPASTE   D6
+  GETBLOCK  3C   31      PATTERN   89   72      VBTCCOPY  D7
+  GETCHAR   3D   32      PCXHEAD   8A   73      VBTXCFER  D8
+  GETCLIP   3E           PCXMODE   8B   74      VBUNDEF   D9
+  GETCLOCK  3F   33      PCXPAL    8C           VGASTATE  DA
+  GETCOLOR  40   34      PCXRANGE  8D           VOICE     DB   AA
+  GETDACS   41   35      PLAYING   8E   75      VOICES    DC   AB
+  GETENTRY  42   36      POINT     8F   76      WAITFOR   DD   AC
+  GETHPAGE  43   37      POINTX    90   77      WAITKEY   DE   AD
+  GETIMAGE  44   38      POLYEDGE  91           WAITVR    DF   AE
+  GETINDEX  45   39      POLYFILL  92   78      FGWHERE   E0   AF
+  GETKEY    46   3A      POLYGON   93   79      XALPHA    E1   B0
+  GETLINES  47   3B      POLYLINE  94   7A      XCONVERT  E2   B1
+  GETMAP    48   3C      POLYOFF   95   7B      XVIEW     E3
+  GETMAXX   49   3D      PRINT     96   7C      YALPHA    E4   B2
+  GETMAXY   4A   3E      PRINTC    97           YCONVERT  E5   B3
+  GETMODE   4B   3F      PUTBLOCK  98   7D      YVIEW     E6
+  GETPAGE   4C   40      PUTIMAGE  99   7E
+
+
+10. History
+
+  1.0  First release
+  1.1  Changed GETENTRY GETRGB parameter ordering.  Code clean-up.
+  1.2  Updated for DX-Forth 3.6
+  1.3  Updated for DX-Forth 3.81
+  1.4  Updated for DX-Forth 4.01
+  1.5  Updated for DX-Forth 4.20 Rename PACK to FGPACK
+

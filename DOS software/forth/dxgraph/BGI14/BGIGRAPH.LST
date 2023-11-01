@@ -1,0 +1,1776 @@
+\ Information
+
+BGI compatible graphics library using Borland Type-2 drivers
+
+
+
+
+
+
+
+
+
+
+
+
+
+\ Load screen
+forth definitions  decimal
+application
+
+marker -BGI
+
+cr .( loading BGI graphics 1.4 ) cr
+
+2  #screens 1-  thru
+
+forth
+
+
+
+
+
+\ ?THROW
+\ Throw error n if flag is non-zero
+: ?THROW ( flag n -- )  swap 0<> and throw ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+\ GETMEM RELMEM SETMEM
+\ Allocate u paragraphs of memory
+: GETMEM ( par -- seg|maxpar ior )
+  'BX !  $4800 'AX !  $21 intcall  doserr?
+  dup if  'BX  else  'AX  then  @  swap ;
+
+\ Free previously allocated memory
+: RELMEM ( seg -- ior )
+  'ES !  $4900 'AX !  $21 intcall  doserr? ;
+
+\ Resize previously allocated memory
+: SETMEM ( seg par -- maxpar ior )
+  'BX !  'ES !  $4A00 'AX !  $21 intcall  'BX @  doserr? ;
+
+
+
+\ tools
+forth definitions system
+
+: EVEN   ( -- )  here 1 and if $90 c, then ;
+: 4ALIGN ( -- )  here dup 1+ 3 xor 3 and dup allot $90 fill ;
+
+: EQU ( x -- )  sys @ tuck 0= sys ! value sys ! ;
+: DW  ( word -- )  here equ , ;
+: DB  ( byte -- )  here equ c, ;
+
+application
+
+
+
+
+
+\ variables
+\ far pointers
+2variable bgivec    \ BGI entry
+2variable bgstat    \ BGI status
+2variable bgutil    \ BGI utility
+2variable grbuf     \ graphbuffer
+
+variable  gstat     \ graphresult
+variable  grsiz     \ graphbuffer size (default=4096)
+variable  psiz      \ graphbuffer size in points
+variable  amax      \ add points capacity
+variable  acnt      \ add points count
+
+: initerr  ( -- )  true abort" Graphics not initialized" ;
+cseg ' initerr  bgivec 2!
+
+\ macros
+macro #DI ( opcode -- )
+  # di mov
+endm
+
+macro >BGI ( -- )  \ perform BGI call
+  si push  di si mov  bgivec [] far call  si pop
+endm
+
+
+
+
+
+
+
+
+\ primitives
+0 equ p0  0 equ p2  \ entry points
+
+\ call BGI with 4/2/0 inputs
+label p4    ( AX BX CX DX -- )
+  dx pop  cx pop
+here to p2  ( AX BX -- )
+  bx pop  ax pop
+here to p0  ( -- )
+  >bgi  next
+end-code
+
+
+
+
+
+\ primitives
+code install ( mode -- seg offs )
+  cx pop  ax ax sub  0 #di  >bgi  es push  bx push  next
+end-code
+
+code query ( -- modes )
+  1 # al mov  0 #di  >bgi  cx push  next
+end-code
+
+code gname ( mode -- seg offs )
+  cx pop  2 # al mov  0 #di  >bgi  es push  bx push  next
+end-code
+
+code ginit ( seg offs -- )
+  bx pop  es pop  2 #di  p0 ) jmp
+end-code
+\ primitives
+code gclear ( -- )
+  4 #di  p0 ) jmp
+end-code
+
+code post ( -- )
+  6 #di  p0 ) jmp
+end-code
+
+code gmove ( x y -- )
+  8 #di  p2 ) jmp
+end-code
+
+code draw ( x y -- )
+  10 #di  p2 ) jmp
+end-code
+\ primitives
+code vect ( x_min y_min x_max y_max -- )
+  12 #di  p4 ) jmp
+end-code
+
+code fpoly ( points seg offs bufsizpoints -- )
+  cx pop  bx pop  es pop  ax pop  14 #di  p0 ) jmp
+end-code
+
+code gbar ( x y width flag -- )
+  16 #di  p4 ) jmp
+end-code
+
+code patbar ( x_min y_min x_max y_max -- )
+  18 #di  p4 ) jmp
+end-code
+\ primitives
+code garc ( start_angle end_angle x_radius y_radius -- )
+  20 #di  p4 ) jmp
+end-code
+
+code pie ( start_angle end_angle x_radius y_radius -- )
+  22 #di  p4 ) jmp
+end-code
+
+code fellipse ( x_radius y_radius -- )
+  24 #di  p2 ) jmp
+end-code
+
+code setpal ( index color|red green blue -- )
+  26 #di  p4 ) jmp
+end-code
+\ primitives
+code allpal ( seg offs -- )
+  bx pop  es pop  28 #di  p0 ) jmp
+end-code
+
+code gcolor ( fill_color draw_color -- )
+  ax pop  bx pop  bl ah mov  30 #di  p0 ) jmp
+end-code
+
+code fstyle ( pattern seg offs -- )
+  bx pop  es pop  ax pop  32 #di  p0 ) jmp
+end-code
+
+code lstyle ( pattern user width -- )
+  cx pop  bx pop  ax pop  34 #di  p0 ) jmp
+end-code
+\ primitives
+code tstyle ( font orientation x_size y_size -- x_size y_size )
+  cx pop  bx pop  dx pop  ax pop  dl ah mov  36 #di  >bgi
+  bx push  cx push  next
+end-code
+
+code text ( seg offs len -- )
+  cx pop  bx pop  es pop  38 #di  p0 ) jmp
+end-code
+
+code tsize ( seg offs len -- width height )
+  cx pop  bx pop  es pop  40 #di  >bgi  bx push
+  ch ch sub  cx push  next
+end-code
+
+
+\ primitives
+code flood ( x y color_edge -- )
+  cx pop  bx pop  ax pop  si push  bp push
+  grbuf ) di les  es dx mov  grsiz ) di add  2 # di sub
+  cli  di sp xchg  ss bp mov  dx ss mov  sti
+  di push  bp push  44 # si mov  bgivec [] far call
+  bx pop  cx pop  cli  bx ss mov  cx sp mov  sti
+  bp pop  si pop  $FF # al cmp  7 # ax mov  1 $ jz
+  ax ax sub  1 $:  ax gstat ) mov  next
+end-code
+
+
+
+
+
+
+\ primitives
+code getpix ( x y -- color )
+  bx pop  ax pop  46 #di  >bgi  dh dh sub  dx push  next
+end-code
+
+code putpix ( x y color -- )
+  dx pop  bx pop  ax pop  dh dh sub  48 #di  p0 ) jmp
+end-code
+
+
+
+
+
+
+
+
+\ primitives
+code bmaputil ( -- seg offs )
+  50 #di  >bgi  es push  bx push  next
+end-code
+
+code getbmap ( x y seg offs -- )
+  bx pop  es pop  dx pop  cx pop  52 #di  p0 ) jmp
+end-code
+
+code putbmap ( x y seg offs code -- )
+  ax pop  bx pop  es pop  dx pop  cx pop  54 #di  p0 ) jmp
+end-code
+
+code setclip ( x_min y_min x_max y_max -- )
+  56 #di  p4 ) jmp
+end-code
+\ primitives
+code colortable ( -- siz_table max_color )
+  al al sub  58 #di  >bgi  bx push  cx push  next
+end-code
+
+code defcolor ( -- seg offs )
+  1 # al mov  58 #di  >bgi  es push  bx push  next
+end-code
+
+\ note: Borland drivers typically return zero!
+code stat ( -- status )
+  bgstat ) bx les  al al sub  es: 0 [bx] al xchg  cbw  1push
+end-code
+
+
+
+\ primitives
+label >util  \ access bitmap utility function
+  bp push  si push  bgutil ) di les  cx di add
+  es: 0 [di] di mov  cs push  1 $ ) call  si pop  bp pop  ret
+  1 $:  es push  di push  far ret  end-code
+
+code gograph ( -- )
+  cx cx sub  >util ) call  next  end-code
+
+code gotext ( -- )
+  2 # cx mov  >util ) call  next  end-code
+
+code putpix2 ( x y color -- )  dx pop  bx pop  ax pop
+  4 # cx mov  >util ) call  next  end-code
+
+
+\ primitives
+code getpix2 ( x y -- color )  bx pop  ax pop
+  6 # cx mov  >util ) call  dh dh sub  dx push  next
+end-code
+
+code getpixbyte ( -- color_depth )
+  8 # cx mov  >util ) call  1push  end-code
+
+code drawpage ( page -- )
+  ax pop  10 # cx mov  >util ) call  next  end-code
+
+code activepage ( page -- )
+  ax pop  12 # cx mov  >util ) call  next  end-code
+
+code wrtmode ( mode -- )
+  ax pop  14 # cx mov  >util ) call  next  end-code
+\ primitives
+label >stat
+  bgstat ) bx les  ax bx add  es: 0 [bx] push  next  end-code
+
+code xres    ( -- n )   2 # ax mov  >stat ju  end-code
+code yres    ( -- n )   4 # ax mov  >stat ju  end-code
+code xefres  ( -- n )   6 # ax mov  >stat ju  end-code
+code yefres  ( -- n )   8 # ax mov  >stat ju  end-code
+code xinch   ( -- n )  10 # ax mov  >stat ju  end-code
+code yinch   ( -- n )  12 # ax mov  >stat ju  end-code
+code xaspect ( -- n )  14 # ax mov  >stat ju  end-code
+code charsiz ( -- n )  16 # ax mov  >stat ju  end-code
+
+
+
+
+\ emulation handler
+label edone  ret  end-code  \ default action
+
+create elist  \ emulated BGI functions
+( offs  fn#  address )
+( 2 )   14 ,  edone ,   \ fpoly
+( 6 )   16 ,  edone ,   \ gbar
+( 10 )  20 ,  edone ,   \ garc
+( 14 )  22 ,  edone ,   \ pie
+( 18 )  24 ,  edone ,   \ fellipse
+        0  ,            \ end of list
+
+
+
+
+
+\ emulation handler
+\ Functions set for emulation in the BGI driver are
+\ routed here.  Emulated calls terminate with RET.
+
+label emuvec ( SI=fn# )
+  ds push  cs push  ds pop
+  elist 4 - # di mov
+1 $: 4 # di add
+  0 # 0 [di] cmp  2 $ jz
+  si  0 [di] cmp  1 $ jnz
+  2 [di] call
+2 $: ds pop  far ret
+end-code
+
+
+
+\ variables
+variable  cpx                       \ x cursor position
+variable  cpy                       \ y cursor position
+variable  xoffs                     \ x view offset
+variable  yoffs                     \ y view offset
+variable  gfx      gfx off          \ graphics flag
+variable  gmode                     \ graphics mode
+create    drvnam   22 allot         \ driver name
+create    devnam   40 1+ allot      \ device name
+variable  modes                     \ device modes
+variable  oldcrt   -1 oldcrt !      \ video mode  -1=none
+2variable aspect                    \ x y aspect ratio
+variable  xcolor                    \ draw/fill color
+variable  bkcolor                   \ background color
+variable  upat                      \ user fillpattern address
+
+\ dit defuserfill curpal
+create dit                          \ device info table
+0 c, $A5 c,  64 allot
+
+create defuserfill                  \ default user fillpattern
+$FFFF , $FFFF , $FFFF , $FFFF ,
+
+create curpal                       \ current palette
+16 c,  16 allot  0 c,
+
+
+
+
+
+
+
+\ field
+\ definer to access data in types
+-? : field
+  create ( base_adr index -- )  cells + ,
+\  does>  ( adr -- x )  @ @ ;
+  ;code  ( adr -- x )
+    bx pop  0 [bx] bx mov  0 [bx] push  next  end-code
+
+
+
+
+
+
+
+
+
+\ GETVIEWSETTINGS VIEW.LEFT/TOP/RIGHT/BOTTOM/CLIP
+create GETVIEWSETTINGS  ( -- adr )
+0   ,  ( left )
+0   ,  ( top )
+639 ,  ( right )
+479 ,  ( bottom )
+1   ,  ( clip )
+
+getviewsettings
+dup 0 field VIEW.LEFT   ( -- x1 )
+dup 1 field VIEW.TOP    ( -- y1 )
+dup 2 field VIEW.RIGHT  ( -- x2 )
+dup 3 field VIEW.BOTTOM ( -- y2 )
+    4 field VIEW.CLIP   ( -- clip )
+
+
+\ GETFILLSETTINGS FILL.PATTERN/COLOR
+create GETFILLSETTINGS ( -- adr )
+0 ,  ( fillpattern )
+0 ,  ( color )
+
+getfillsettings
+dup 0 field FILL.PATTERN ( -- pattern )
+    1 field FILL.COLOR   ( -- color )
+
+
+
+
+
+
+
+
+\ GETLINESETTINGS LINE.STYLE/UPATTERN/THICKNESS
+create GETLINESETTINGS ( -- adr )
+0 ,  ( linestyle )
+0 ,  ( upattern )
+1 ,  ( thickness )
+
+getlinesettings
+dup 0 field LINE.STYLE     ( -- style )
+dup 1 field LINE.UPATTERN  ( -- upattern )
+    2 field LINE.THICKNESS ( -- thickness )
+
+
+
+
+
+
+\ GETTEXTSETTINGS TEXT.FONT/DIRECTION/CHARSIZE/HORIZ/VERT
+create GETTEXTSETTINGS ( -- adr )
+0 ,  ( font )
+0 ,  ( direction )
+1 ,  ( charsize )
+0 ,  ( horiz )
+2 ,  ( vert )
+
+gettextsettings
+dup 0 field TEXT.FONT      ( -- font )
+dup 1 field TEXT.DIRECTION ( -- direction )
+dup 2 field TEXT.CHARSIZE  ( -- charsize )
+dup 3 field TEXT.HORIZ     ( -- horiz )
+    4 field TEXT.VERT      ( -- vert )
+
+
+\ x/ymin x/ymax w.xmin/max w.ymin/max
+even  here
+0 ,  0 ,  639 ,  479 ,  \ device limits
+
+dup constant xmin ( -- adr )  cell+
+dup constant ymin ( -- adr )  cell+
+dup constant xmax ( -- adr )  cell+
+    constant ymax ( -- adr )
+
+even  here
+0 ,  0 ,  639 ,  479 ,  \ window limits
+
+dup constant w.xmin ( -- adr )  cell+
+dup constant w.ymin ( -- adr )  cell+
+dup constant w.xmax ( -- adr )  cell+
+    constant w.ymax ( -- adr )
+\ abscoord abscoord2
+\ convert window coords to absolute
+code abscoord ( x y -- x2 y2 )
+  sp bx mov
+  yoffs ) ax mov  ax 0 [bx] add
+  xoffs ) ax mov  ax 2 [bx] add  next
+end-code
+
+code abscoord2 ( x1 y1 x2 y2 -- x3 y4 x3 y4 )
+  sp bx mov
+  yoffs ) ax mov  ax 0 [bx] add  ax 4 [bx] add
+  xoffs ) ax mov  ax 2 [bx] add  ax 6 [bx] add  next
+end-code
+
+
+
+\ relcoord setcoords
+\ adjust coord for relative move/line
+code relcoord ( x y -- x2 y2 )
+  sp bx mov
+  cpy ) ax mov  yoffs ) ax sub  ax 0 [bx] add
+  cpx ) ax mov  xoffs ) ax sub  ax 2 [bx] add  next
+end-code
+
+\ save coords to memory
+code setcoords ( x1 y1 x2 y2 adr -- )
+  bx pop
+  6 [bx] pop  4 [bx] pop  2 [bx] pop  0 [bx] pop  next
+end-code
+
+
+
+\ xorder inorder
+\ order coords
+label xorder ( AX BX CX DX )
+  cx ax cmp  1 $ jl   cx ax xchg  1 $:
+  dx bx cmp  2 $ jl   dx bx xchg  2 $:  ret
+end-code
+
+code inorder ( x1 y1 x2 y2 -- xmin ymin xmax ymax )
+  dx pop  cx pop  bx pop  ax pop  xorder ) call
+  ax push  bx push  cx push  dx push  next
+end-code
+
+
+
+
+
+\ range range2
+\ check if coord in window  NC=no
+label range ( AX BX )
+  w.xmin ) ax cmp  1 $ jl  w.xmax ) ax cmp  1 $ jg
+  w.ymin ) bx cmp  1 $ jl  w.ymax ) bx cmp  1 $ jg
+  stc  ret  1 $:  clc  ret
+end-code
+
+\ check if coords in window  NC=no
+label range2 ( AX BX CX DX )
+  w.xmin ) ax cmp  1 $ jnl  w.xmin ) cx cmp  5 $ jl  1 $:
+  w.xmax ) ax cmp  2 $ jng  w.xmax ) cx cmp  5 $ jg  2 $:
+  w.ymin ) bx cmp  3 $ jnl  w.ymin ) dx cmp  5 $ jl  3 $:
+  w.ymax ) bx cmp  4 $ jng  w.ymax ) dx cmp  5 $ jg  4 $:
+  stc  ret  5 $:  clc  ret
+end-code
+\ cliprect
+\ clip rect to window  NC=outside window
+label cliprect ( AX BX CX DX )
+  xorder ) call  range2 ) call  1 $ jnc
+  di push  si push
+  w.xmin ) di mov  w.xmax ) si mov  2 $ ) call
+  cx ax xchg  2 $ ) call  cx ax xchg
+  w.ymin ) di mov  w.ymax ) si mov
+  bx ax xchg  2 $ ) call  bx ax xchg
+  dx ax xchg  2 $ ) call  dx ax xchg
+  si pop  di pop  stc  1 $: ret
+
+2 $:  di ax cmp  3 $ jnl  di ax mov  ret
+3 $:  si ax cmp  4 $ jng  si ax mov  4 $: ret
+end-code
+
+\ xbar
+\ draw patterned bar if in window
+label xbar ( AX BX CX DX )
+  cliprect ) call  1 $ jnc
+  si push  18 # si mov  bgivec [] far call ( patbar)  si pop
+1 $: ret
+end-code
+
+
+
+
+
+
+
+
+
+\ clipline
+even
+0 dw lx0    \ 1st endpoint
+0 dw ly0
+0 dw lx1    \ 2nd endpoint
+0 dw ly1
+
+0 dw xlen
+0 dw ylen
+
+0 dw res    \ result flag
+
+
+
+
+
+\ clipline
+label xadj ( AX )
+  ax push  ly0 ) ax sub  ly0 ) pop
+  xlen ) imul  ylen ) idiv  ax lx0 ) add  ret
+end-code
+
+label yadj ( AX )
+  ax push  lx0 ) ax sub  lx0 ) pop
+  ylen ) imul  xlen ) idiv  ax ly0 ) add  ret
+end-code
+
+label swapends
+  lx0 ) ax mov  lx1 ) ax xchg  ax lx0 ) mov
+  ly0 ) ax mov  ly1 ) ax xchg  ax ly0 ) mov  ret
+end-code
+
+\ clipline
+label outcode ( AX BX -- DL )
+  dl dl xor
+  w.xmin ) ax cmp  1 $ jnl  1 # dl mov  1 $:
+  w.xmax ) ax cmp  2 $ jng  2 # dl mov  2 $:
+  bx ax mov
+  w.ymin ) ax cmp  3 $ jnl  4 # dl add  3 $:
+  w.ymax ) ax cmp  4 $ jng  8 # dl add  4 $:
+  ret
+end-code
+
+
+
+
+
+
+\ clipline
+label cline
+  ax cx sub  2 $ jo  cx xlen ) mov
+  bx dx sub  2 $ jo  dx ylen ) mov
+1 $:
+  lx0 ) ax mov  ly0 ) bx mov  outcode ) call  dl ch mov
+  lx1 ) ax mov  ly1 ) bx mov  outcode ) call  dl al mov
+  ch al or  3 $ jz  ch dl and  4 $ jz
+2 $:  0 # res ) mov  3 $:  ret
+
+4 $:  ch ch and  5 $ jnz  swapends ) call
+
+5 $:  0 # xlen ) cmp  7 $ jnz
+  ly0 ) ax mov  w.ymin ) ax cmp  6 $ jnl
+  w.ymin ) ax mov  ax ly0 ) mov
+
+\ clipline
+6 $:  w.ymax ) ax mov  ly0 ) ax cmp  15 $ jnl
+  ax ly0 ) mov  15 $ ju
+
+7 $:  0 # ylen ) cmp  9 $ jnz
+  lx0 ) ax mov  w.xmin ) ax cmp  8 $ jnl
+  w.xmin ) ax mov  ax lx0 ) mov
+
+8 $:  w.xmax ) ax mov  lx0 ) ax cmp  15 $ jnl
+  ax lx0 ) mov  15 $ ju
+
+9 $:  lx0 ) ax mov  w.xmin ) ax cmp  10 $ jnl
+  w.xmin ) ax mov  11 $ ju
+
+
+
+\ clipline
+10 $:  w.xmax ) ax mov  lx0 ) ax cmp  12 $ jnl
+11 $:  yadj ) call  15 $ ju
+
+12 $:  ly0 ) ax mov  w.ymin ) ax cmp  13 $ jnl
+  w.ymin ) ax mov  14 $ ju
+
+13 $:  w.ymax ) ax mov  ly0 ) ax cmp  15 $ jnl
+14 $:  xadj ) call
+
+15 $:  ch ch and  16 $ jnz  swapends ) call
+16 $:  1 $ ) jmp
+end-code
+
+
+
+\ clipline
+\ clip line to window  NC=outside
+label clipline ( AX BX CX DX )
+  range ) call  1 $ jnc
+  cx ax xchg  dx bx xchg  range ) call
+  cx ax xchg  dx bx xchg  1 $ jnc  ret
+1 $:
+  ax lx0 ) mov  bx ly0 ) mov  cx lx1 ) mov  dx ly1 ) mov
+  1 # res ) mov  cline ) call  0 # res ) cmp  2 $ jz  stc
+  lx0 ) ax mov  ly0 ) bx mov  lx1 ) cx mov  ly1 ) dx mov
+2 $:  ret
+end-code
+
+
+
+
+\ xline
+\ draw line to AX BX clipped
+label xline ( AX BX )
+  ax cx mov  cpx ) ax xchg  bx dx mov  cpy ) bx xchg
+  5 $ ) call ( draw line)
+  3 # getlinesettings 4 + ) cmp  1 $ jnc  ret
+
+( do thick line )
+1 $:  si push  ax di mov  cx di sub  2 $ jns  di neg
+2 $:  bx si mov  dx si sub  3 $ jns  si neg
+3 $:  si di cmp  si pop  4 $ jnc
+
+  ax dec  cx dec  5 $ ) call
+  ax inc  ax inc  cx inc  cx inc  5 $ ju
+
+
+\ xline
+4 $:  bx dec  dx dec  5 $ ) call
+  bx inc  bx inc  dx inc  dx inc
+
+( draw line  AX BX CX DX )
+5 $:  ax push  bx push  cx push  dx push
+  clipline ) call  6 $ jnc
+  si push  12 # si mov  bgivec [] far call ( vect )  si pop
+6 $:  dx pop  cx pop  bx pop  ax pop  ret
+end-code
+
+
+
+
+
+
+\ GETDRIVERNAME GETMODENAME
+\ Current driver name
+: GETDRIVERNAME ( -- adr u )
+  drvnam count ;
+
+\ Device name
+: GETMODENAME ( mode -- adr u )
+  gname  cseg devnam  41 cmovel
+  devnam count  40 min ;
+
+
+
+
+
+
+
+\ GETMAXX/Y X/YDPI GETMAXMODE GET/SETASPECTRATIO
+aka xres GETMAXX ( -- x_max )   \ max horiz coord
+aka yres GETMAXY ( -- y_max )   \ max vert coord
+0 value  XDPI    ( -- x_dpi )   \ horiz dots/inch
+0 value  YDPI    ( -- y_dpi )   \ vert dots/inch
+
+: GETMAXMODE ( -- mode )   modes @ 1- ;
+
+: GETASPECTRATIO ( -- x_aspect y_aspect )
+  aspect 2@ ;
+
+: SETASPECTRATIO ( x_aspect y_aspect -- )
+  aspect 2! ;
+
+
+
+\ GRAPHERRORMSG
+: GRAPHERRORMSG ( n -- c-addr u )
+   0  of s" No error" end
+  -1  of s" BGI Graphics not installed"  end
+  -2  of s" Graphics hardware not detected" end
+  -3  of s" Device driver file not found" end
+  -4  of s" Invalid Device driver file" end
+  -5  of s" Not enough memory to load driver" end
+  -6  of s" Out of memory in scan fill" end
+  -7  of s" Out of memory in flood fill" end
+  -8  of s" Font file not found" end
+  -9  of s" Not enough memory to load font" end
+  -10 of s" Invalid graphics mode for selected driver" end
+  -11 of s" Graphics error" end
+  -12 of s" Graphics I/O error" end
+
+\ GRAPHERRORMSG GRAPHRESULT gstat!
+  -13 of s" Invalid font file" end
+  -14 of s" Invalid font number" end
+  -18 of s" Invalid File Version number" end
+  drop  s" Graphics error" ;
+
+\ Return status
+: GRAPHRESULT ( -- error )
+  gstat @ negate  gstat off ;
+
+: gstat! ( n -- )  gstat ! ;
+
+
+
+
+
+\ video vsave vreset
+: video ( -- )  $10 intcall ;
+
+: vsave ( -- )  oldcrt @  -1 = if
+    $F00 'AX !  video  'AX c@  oldcrt !
+  then ;
+
+: vreset ( -- )  oldcrt @  -1 <> if
+    oldcrt @  $FF and  'AX !  video  -1 oldcrt !
+  then ;
+
+
+
+
+
+
+\ inigrmem inidrvmem releasemem
+: inigrmem ( -- )
+  grsiz @  4 rshift 1+  ( paragraphs )
+  getmem  12 ( IOerror) ?throw  0 grbuf 2! ;
+
+: inidrvmem ( blocks -- )
+  10 *  getmem  5 ( NoLoadMem) ?throw  0 bgivec 2! ;
+
+: releasemem ( -- )
+  bgivec 2+ @ relmem drop
+  grbuf  2+ @ relmem drop ;
+
+
+
+
+
+\ readdrv
+: readdrv ( blocks fid -- )
+  bgivec 2@  2swap  swap 0 ?do
+    >r  here 160  r@ read-file  12 ?throw  drop
+    cseg here  2over  160 cmovel
+    160 +  r>
+  loop  drop 2drop ;
+
+
+
+
+
+
+
+
+
+\ opendrv
+: opendrv ( adr u -- )
+  0 drvnam c!
+  s" BGI" +ext  r/o open-file  3 ?throw  >r  \ exist?
+  here 160  2dup erase  r@ read-file  4 ?throw  drop
+  here 2  s" pk" compare  4 ?throw          \ driver signature
+  here 138 + drvnam 22 cmove                \ driver name
+  r@  file-size  2drop  160 -               \ driver size as
+  0 160 um/mod swap if 1+ then              \ 160 byte blocks
+  dup inidrvmem                             \ allocate memory
+  r@ readdrv  r> close-file drop ;          \ load BGI driver
+
+
+
+
+
+\ patchdrv initgr
+\ patch BGI driver with emulation vector
+: patchdrv ( -- )
+  bgivec 2@ 16 +  2>r        ( BGI offset )
+  $9A 2r@ c!l                ( far call opcode )
+  cseg emuvec 2r> 1+  2!l ;  ( emulation routine )
+
+: initgr ( adr u -- )
+  opendrv
+  bmaputil bgutil 2!
+  patchdrv
+  inigrmem
+  query modes !
+  gfx on ;
+
+
+\ SETGRAPHBUFSIZE RESTORECRTMODE
+\ Set graphics buffer size (must run before OPENGRAPH)
+: SETGRAPHBUFSIZE ( size -- )
+  gfx @ if  drop  end   ( ignore )
+  dup grsiz !
+  2 rshift  dup psiz !  ( capacity in points )
+  2 3 */ amax ! ;       ( one third for polyfill workspace )
+
+4096 setgraphbufsize  \ set default size
+
+\ Switch to previous video mode
+: RESTORECRTMODE ( -- )
+  post  vreset ;
+
+
+
+\ GET/PUTPIXEL
+code GETPIXEL ( x y -- color )
+  bx pop  ax pop
+  xoffs ) ax add  yoffs ) bx add
+  si push  46 # si mov  bgivec [] far call ( getpix)  si pop
+  dh dh sub  dx push  next
+end-code
+
+code PUTPIXEL ( x y color -- )
+  dx pop  bx pop  ax pop
+  xoffs ) ax add  yoffs ) bx add
+  range ) call  1 $ jnc
+  si push  48 # si mov  bgivec [] far call ( putpix)  si pop
+1 $:  next
+end-code
+
+\ GETX/Y
+code GETX ( -- x )
+  cpx ) ax mov  xoffs ) ax sub  ax push  next
+end-code
+
+code GETY ( -- y )
+  cpy ) ax mov  yoffs ) ax sub  ax push  next
+end-code
+
+
+
+
+
+
+
+
+\ MOVETO LINETO
+code MOVETO ( x y -- )
+  bx pop  yoffs ) bx add  bx cpy ) mov
+  ax pop  xoffs ) ax add  ax cpx ) mov
+  si push  8 # si mov  bgivec [] far call ( move )  si pop
+  next
+end-code
+
+code LINETO ( x y -- )
+  bx pop  yoffs ) bx add
+  ax pop  xoffs ) ax add
+  xline ) call  next
+end-code
+
+
+
+\ LINE MOVEREL LINEREL
+: LINE ( x1 y1 x2 y2 -- )
+  getx gety  2rot moveto
+  2swap lineto  moveto ;
+
+: MOVEREL ( x y -- )  relcoord moveto ;
+: LINEREL ( x y -- )  relcoord lineto ;
+
+
+
+
+
+
+
+
+
+\ xtrace
+\ get next point AX BX  ZF=end  NC=break
+label nextp ( -- AX BX )
+  es: 0 [di] ax mov  es: 2 [di] bx mov  4 # di add
+  $80 # bh cmp  stc  1 $ jnz  0 # bl cmp  clc  1 $:  ret
+end-code
+
+\ trace poly outline
+label xtrace ( )
+  cpx ) push  cpy ) push  grbuf ) di les
+1 $:  nextp ) call  3 $ jz  1 $ jnc
+  ax cpx ) mov  bx cpy ) mov
+2 $:  nextp ) call  3 $ jz  1 $ jnc
+  es push  di push  xline ) call  di pop  es pop  2 $ ju
+3 $:  cpy ) pop  cpx ) pop  ret
+end-code
+\ xfill
+\ draw filled poly - does not trace
+label xfill ( )
+  es push  di push
+  grbuf ) bx les  acnt ) ax mov  psiz ) cx mov
+  si push  14 # si mov  bgivec [] far call ( fpoly)  si pop
+  di pop  es pop  ret
+end-code
+
+
+
+
+
+
+
+
+\ movpoly
+0 dw pts  0 dw tmpx  0 dw tmpy
+
+\ add point AX BX to graphbuffer  NC=full
+label addpt ( AX BX )
+  acnt ) dx mov  amax ) dx cmp  1 $ jnc
+  di push  dx shl  dx shl  grbuf ) di les  dx di add
+  ax es: 0 [di] mov  bx es: 2 [di] mov
+  acnt ) inc  pts ) inc  stc  di pop  1 $:  ret
+end-code
+
+\ add end marker
+label endpt ( )
+  $8000 # bx mov  bx ax mov  addpt ) jmp
+end-code
+
+\ movpoly
+\ move poly points to graphbuffer
+label movpoly ( points adr flag -- )
+  0 # pts ) mov  0 # acnt ) mov  5 $ jcxz  ax ax or  pushf
+  0 [di] push  2 [di] push  ( save 1st point )
+1 $:
+  0 [di] ax mov  xoffs ) ax add
+  2 [di] bx mov  yoffs ) bx add
+  0 # pts ) cmp  6 $ jnz
+  ax tmpx ) mov  bx tmpy ) mov
+2 $:  addpt ) call  4 $ jnc ( full? )
+3 $:  4 # di add  1 $ loop
+4 $:  bx pop  ax pop  popf  5 $ jz
+  xoffs ) ax add  yoffs ) bx add  addpt ) call
+5 $:  endpt ) jmp
+
+\ movpoly
+6 $:  ax tmpx ) cmp  2 $ jnz
+      bx tmpy ) cmp  2 $ jnz
+  1 # pts ) cmp  3 $ jz
+  addpt ) call
+  $8001 # bx mov  bx ax mov  addpt ) call
+  0 # pts ) mov  3 $ ju
+end-code
+
+
+
+
+
+
+
+
+\ DRAWPOLY FILLPOLY
+code DRAWPOLY ( points adr -- )
+  di pop  cx pop  ax ax sub  movpoly ) call
+  xtrace ) call  next
+end-code
+
+code FILLPOLY ( points adr -- )
+  di pop  cx pop  1 # ax mov  movpoly ) call
+  xfill ) call  xtrace ) call  next
+end-code
+
+
+
+
+
+
+\ BAR FLOODFILL SETWRITEMODE
+code BAR ( x_min y_min x_max y_max -- )
+  dx pop  cx pop  bx pop  ax pop
+  xoffs ) cx add  xoffs ) ax add
+  yoffs ) dx add  yoffs ) bx add
+  xbar ) call  next
+end-code
+
+: FLOODFILL ( x y color_edge -- )
+  >r  abscoord  r> flood ;
+
+aka wrtmode SETWRITEMODE ( mode -- )
+
+
+
+
+\ GET/PUTIMAGE
+: GETIMAGE ( x1 y1 x2 y2 seg offs -- )
+  2>r  abscoord2 inorder  2 pick -  swap 3 pick -
+  2r@ 2!l  2r> getbmap ;
+
+: PUTIMAGE ( x y seg offs mode -- )
+  >r 2>r  abscoord  2r> r>  putbmap ;
+
+
+
+
+
+
+
+
+
+\ IMAGESIZE
+\ Calculate image size
+: IMAGESIZE ( x1 y1 x2 y2 -- u )
+  abscoord2 inorder
+  >r  rot - ( width  )  3 rshift 1+  ( bytes )
+  r>  rot - ( height )  1+  *
+  getpixbyte ( colordepth )  um*
+  8 m+ ( allow for width/height parameters )
+  dup if ( overflow )
+    2drop  -1  11 ( Error)
+  then  gstat! ;
+
+
+
+
+
+\ SETFILLSTYLE SETFILLPATTERN SETLINESTYLE
+: SETFILLSTYLE ( pattern color -- )
+  2dup swap getfillsettings 2!
+  dup xcolor 1+ c!  xcolor c@  gcolor
+  dup 12 = if drop -1 then  cseg upat @  fstyle ;
+
+: SETFILLPATTERN ( adr_pattern color -- )
+  swap upat !  12 swap setfillstyle ;
+
+: SETLINESTYLE ( linestyle upattern width -- )
+  dup 2over  getlinesettings >r
+  r@ 2+ !  r@ ! r> 4 + !  lstyle ;
+
+
+
+
+\ SETTEXTSTYLE
+\ only default font currently supported
+: SETTEXTSTYLE ( font direction charsize -- )
+  2 pick if
+    2drop drop  14 ( InvalidFontNum)
+  else
+    2dup swap  gettextsettings cell+  2!
+    >r  charsiz
+    dup   $FF and   r@ *
+    swap  8 rshift  r> *  ( x y )
+    tstyle 2drop  0
+  then  gstat! ;
+
+
+
+
+\ SETTEXTJUSTIFY TEXTHEIGHT TEXTWIDTH
+: SETTEXTJUSTIFY ( horiz vert -- )
+  swap gettextsettings 3 cells + 2! ;
+
+: TEXTHEIGHT ( adr len -- height )
+  2drop ( discard)  cseg s" M"  tsize  nip ;
+
+: TEXTWIDTH ( adr len -- width )
+  cseg -rot tsize  drop ;
+
+
+
+
+
+
+
+\ xadjust yadjust
+: xadjust ( offset -- x )
+  text.horiz case
+    0 of  drop 0  endof
+    1 of  2/      endof
+  endcase  negate  getx + ;
+
+: yadjust ( offset -- y )
+  text.vert case
+    1 of  2/      endof
+    2 of  drop 0  endof
+  endcase  negate  gety + ;
+
+
+
+
+\ OUTTEXT OUTTEXTXY
+: OUTTEXT ( adr len -- )
+  gety getx 2>r  2dup textwidth >r  ( save )
+  text.direction if  ( vert )
+    2dup  textwidth   yadjust  >r
+    2dup  textheight  xadjust
+  else  ( horiz )
+    2dup  textheight  yadjust  >r
+    2dup  textwidth   xadjust
+  then  r> moveto
+  dup if  cseg -rot  text  else  2drop  then
+  ( advance cursor position if applicable )
+  2r> ( x textwidth )  text.font 0= and
+  text.horiz 0= and  text.direction 0= and  +  r> moveto ;
+
+: OUTTEXTXY ( x y adr len -- )  2swap moveto outtext ;
+\ PALETTE.SIZE/COLORS curpal!
+\ For use on 16 color EGA modes only
+
+: PALETTE.SIZE   ( -- size )        curpal c@ ;
+
+: PALETTE.COLORS ( -- adr_colors )  curpal 1+ ;
+
+: curpal! ( color index -- )  palette.colors + c! ;
+
+
+
+
+
+
+
+
+\ GETPALETTESIZE GETDEFAULTPALETTE GET/SETPALETTE
+\ For use on 16 color EGA modes only
+
+: GETPALETTESIZE ( -- u )  colortable drop ;
+
+: GETDEFAULTPALETTE ( adr_pal -- )
+  >r  defcolor  cseg r>  17 cmovel ;
+
+: GETPALETTE ( adr_pal -- )  curpal swap 17 cmove ;
+
+: SETPALETTE ( colornum color -- )
+  over palette.size < if
+    2dup swap  dup 0= if  bkcolor off  then
+    curpal!  0 0 setpal  0
+  else  2drop  11  then  gstat! ;
+
+\ SETALLPALETTE
+\ For use on 16 color EGA modes only
+
+: SETALLPALETTE ( adr_pal -- )
+  count  16 min  0 ?do
+    dup i + c@  dup $FF - if
+      i curpal!
+    else  drop  then
+  loop
+  c@ $FF - if  bkcolor off  then
+  0 ( border color )  16 curpal!
+  cseg palette.colors allpal ;
+
+
+
+
+\ GET/SETBKCOLOR
+\ For use on 16 color EGA modes only
+
+: GETBKCOLOR ( -- color )  bkcolor @ ;
+
+: SETBKCOLOR ( colornum -- )
+  dup 16 < if
+    dup bkcolor !
+    dup palette.colors + c@
+    swap 0<> and
+    dup 0 curpal!
+    -1 swap 0 0 setpal  0
+  else  drop  11  then  gstat! ;
+
+
+
+\ GET/SETCOLOR GETMAXCOLOR SETRGBPALETTE
+: GETCOLOR ( -- color )  xcolor c@ ;
+
+: SETCOLOR ( color -- )
+  dup xcolor c!  getfillsettings cell+ @  swap gcolor ;
+
+: GETMAXCOLOR ( -- u )  colortable nip ;
+
+: SETRGBPALETTE ( colornum red green blue -- )
+  >r  rot  $8000 or  -rot  r>  setpal ;
+
+
+
+
+
+
+\ SETVIEWPORT
+: SETVIEWPORT ( x1 y1 x2 y2 clip -- )
+  >r  inorder  2>r
+  over xmin @ <  over ymin @ <  or   2r>  rot >r
+  over xmax @ >  over ymax @ >  or   r> or
+  if  r> drop 2drop 2drop  11
+  else
+    2over  yoffs !  xoffs !
+    r>  dup 0<> [ getviewsettings 4 cells + ] literal !  if
+      2over 2over setclip
+      2over 2over w.xmin setcoords
+    then
+    getviewsettings setcoords  0
+  then  gstat! ;
+
+
+\ CLEARDEVICE CLEARVIEWPORT
+: CLEARDEVICE ( -- )
+  gclear  0 0 moveto ;
+
+: CLEARVIEWPORT ( -- )
+  fill.pattern fill.color
+  0 0 setfillstyle
+  0 0 view.right view.left - view.bottom view.top - bar
+  0 0 moveto
+  setfillstyle ;
+
+
+
+
+
+
+\ GRAPHDEFAULTS
+: GRAPHDEFAULTS ( -- )
+  0 0 getmaxx getmaxy 1 setviewport
+  curpal  dup getdefaultpalette  setallpalette
+  getpalettesize 1- if  0 setbkcolor  then  bkcolor off
+  getmaxcolor  dup setcolor
+  defuserfill over setfillpattern
+  1 swap setfillstyle
+  0 0 1 setlinestyle
+  0 0 1 settextstyle
+  0 2 settextjustify
+  0 setwritemode
+  0 0 moveto ;
+
+
+
+\ GET/SETGRAPHMODE
+: GETGRAPHMODE ( -- mode )
+  gfx @ if  gmode @  0  else  -1  1  then  gstat! ;
+
+: SETGRAPHMODE ( mode -- )
+  dup modes @ < if
+    vsave  dup gmode !  install  bgstat 2!
+    cseg dit ginit
+    xaspect 10000 setaspectratio
+    getmaxx getmaxy
+    2dup  ymax !  xmax !  0 ymin !  0 xmin !
+    1000 yinch */ 1+ to ydpi  \ round up
+    1000 xinch */ 1+ to xdpi  \
+    graphdefaults  0
+  else  drop  10  then  gstat! ;
+
+\ CLOSEGRAPH OPENGRAPH
+\ Exit graphics system
+: CLOSEGRAPH ( -- )
+  gfx @ if  restorecrtmode  releasemem  then
+  cseg ['] initerr  bgivec 2!
+  gfx off  0 gstat! ;
+
+\ Load BGI driver & initialize graphics system
+: OPENGRAPH ( adr u -- )
+  closegraph
+  ['] initgr catch  dup gstat!  if 2drop then ;
+
+
+
+
+
+\ GETARCCOORDS ARC.X/Y/START/END
+create GETARCCOORDS ( -- adr )
+0 , 0 ,  ( centre )
+0 , 0 ,  ( start )
+0 , 0 ,  ( end )
+
+getarccoords
+dup 0 field ARC.X
+dup 1 field ARC.Y
+dup 2 field ARC.XSTART
+dup 3 field ARC.YSTART
+dup 4 field ARC.XEND
+    5 field ARC.YEND
+
+
+
+\ sines
+even  here equ sines  hex
+0000 , 023C , 0478 , 06B3 , 08EE , 0B28 , 0D61 , 0F99 ,
+11D0 , 1406 , 163A , 186C , 1A9D , 1CCB , 1EF7 , 2121 ,
+2348 , 256C , 278E , 29AC , 2BC7 , 2DDF , 2FF3 , 3203 ,
+3410 , 3618 , 381D , 3A1C , 3C18 , 3E0E , 4000 , 41ED ,
+43D4 , 45B7 , 4794 , 496B , 4B3D , 4D08 , 4ECE , 508E ,
+5247 , 53FA , 55A6 , 574C , 58EB , 5A82 , 5C13 , 5D9D ,
+5F1F , 609A , 620E , 637A , 64DE , 663A , 678E , 68DA ,
+6A1E , 6B5A , 6C8D , 6DB8 , 6EDA , 6FF4 , 7104 , 720D ,
+730C , 7402 , 74EF , 75D3 , 76AE , 7780 , 7848 , 7907 ,
+79BC , 7A68 , 7B0B , 7BA3 , 7C33 , 7CB8 , 7D34 , 7DA6 ,
+7E0E , 7E6D , 7EC1 , 7F0C , 7F4C , 7F83 , 7FB0 , 7FD3 ,
+7FEC , 7FFB , 7FFF ,
+decimal
+
+\ xsin xcos
+0 equ xsin  \ sine entry
+label xcos ( AX=+angle BX=mult -- DX )
+  90 # ax add
+here to xsin
+1 $:  360 # ax cmp  2 $ jna  360 # ax sub  1 $ ju
+2 $:  cx cx sub  90 # di mov  di ax cmp  5 $ jna
+  di shl  di ax cmp  3 $ jna  cx dec
+  270 # ax cmp  4 $ jna  di shl
+3 $:  ax di xchg
+4 $:  di neg  di ax add
+5 $:  ax di mov  di shl  sines # di add
+  0 [di] ax mov  cx cx or  6 $ jz  ax neg
+6 $:  bx imul  $4000 # ax add  0 # dx adc  \ round
+  ax shl  dx rcl  ret
+end-code
+\ xarc
+\ add arc point
+label arcpt ( AX=angle )
+  ax push ( angle )
+  6 [bp] bx mov ( y_rad )  xsin ) call  dx neg
+  2 [si] dx add ( y )
+  ax pop  dx push
+  4 [bp] bx mov ( x_rad )  xcos ) call
+  0 [si] dx add ( x )
+  xoffs ) ax mov  dx ax add
+  bx pop  yoffs ) bx add
+  addpt ) jmp
+end-code
+
+
+
+\ xarc
+\ add arc centre point
+label addcp ( -- )
+  0 # 8 [bp] cmp  1 $ jng  ( pie only )
+  0 [si] ax mov  xoffs ) ax add
+  2 [si] bx mov  yoffs ) bx add
+  addpt ) call
+1 $: ret
+end-code
+
+
+
+
+
+
+
+\ xarc
+\ set arc start/end coords
+label arcends ( -- )
+  0 [bp] ax mov ( start angle )  arcpt ) call
+  xoffs ) ax sub  ax 4 [si] mov
+  yoffs ) bx sub  bx 6 [si] mov
+  2 [bp] ax mov ( end angle )    arcpt ) call
+  xoffs ) ax sub  ax 8 [si] mov
+  yoffs ) bx sub  bx 10 [si] mov  ret
+end-code
+
+label setline ( AL=style )
+  getlinesettings 2+ ) bx mov
+  getlinesettings 4 + ) cx mov
+  34 # si mov  bgivec [] far call ( lstyle)  ret
+end-code
+\ xarc
+label xarc ( AX BX CX DX DI=mode )
+  bx ax cmp  1 $ jna  360 # bx add
+1 $:  di push  dx push  cx push  bx push  ax push  sp bp mov
+  getlinesettings ) push  al al sub  setline ) call
+  getarccoords # si mov  arcends ) call
+  0 # acnt ) mov  addcp ) call
+  0 [bp] ax mov  ( start angle )
+2 $:  ax push  arcpt ) call
+  ax pop  ax inc  2 [bp] ax cmp  2 $ jng
+  addcp ) call  endpt ) call
+  0 # 8 [bp] cmp  pushf  3 $ jz  xfill ) call
+3 $:  popf  4 $ js  xtrace ) call
+4 $:  ax pop  setline ) call
+  10 # sp add  ret
+end-code
+\ (arc) (pie) (fellipse)
+label (arc)
+  di di sub  xarc ju
+end-code
+
+\ fill and outline
+label (pie)
+  1 # di mov  xarc ju
+end-code
+
+\ fill no outline
+label (fellipse)
+  ax cx mov  bx dx mov  ax ax sub  360 # bx mov
+  -1 # di mov  xarc ju
+end-code
+
+\ (fpoly)
+label fpoly1 ( AX -- )
+  -6 [bp] cx mov  -8 [bp] cx cmp  3 $ jnc
+  -6 [bp] inc  -4 [bp] si mov  2 $ jcxz
+1 $:  cx dec
+  cx bx mov  bx shl  0 [bx+si] dx mov
+  cx inc  ax dx cmp  2 $ jl
+  cx bx mov  bx shl  dx 0 [bx+si] mov
+  1 $ loop
+2 $:  cx bx mov  bx shl  ax 0 [bx+si] mov
+3 $:  ret
+end-code
+
+
+
+
+\ (fpoly)
+label fpoly2 ( BX -- AX )
+  -6 [bx] si mov  -4 [bx] di mov
+  -2 [bx] cx mov   0 [bx] dx mov
+  di dx cmp  1 $ jl
+  si cx xchg  di dx xchg
+1 $:  cx ax mov
+  dx di sub  2 $ jz
+  -10 [bp] ax mov  ( line )
+  dx ax sub  cx si sub
+  si imul  di idiv  cx ax add
+2 $:  ret
+end-code
+
+
+
+\ (fpoly)
+label fpoly3 ( -- )
+  0 # -6 [bp] mov  -2 [bp] bx mov
+  bx inc  bx inc  0 [bx] cx mov
+1 $:  -10 [bp] ax mov  ( line )
+2 $:  4 # bx add  0 [bx] dx mov
+  cx di mov  dx cx mov  $80 # dh cmp  4 $ jz
+  di dx cmp  3 $ jl  di dx xchg
+3 $:  dx ax cmp  2 $ jl  di ax cmp  2 $ jnl
+  bx push  cx push
+  fpoly2 ) call  fpoly1 ) call
+  cx pop  bx pop  1 $ ju
+4 $:  1 # dl cmp  5 $ jnz
+  4 # bx add  0 [bx] cx mov
+  $80 # ch cmp  1 $ jnz  5 $:  ret
+end-code
+\ (fpoly)
+label fpoly4 ( -- )
+  0 # -6 [bp] cmp  4 $ jz
+  -4 [bp] si mov  ax ax xor
+1 $:  ax push  ds push
+  ax bx mov  bx shl  1 # ax test
+  0 [bx+si] ax mov  -10 [bp] bx mov
+  cs push  ds pop  2 $ jnz
+  ax -16 [bp] mov  bx -18 [bp] mov  3 $ ju
+2 $:  ax cx mov  bx dx mov
+  -16 [bp] cx xchg  -18 [bp] dx xchg
+  xbar ) call
+3 $:  ds pop  ax pop
+  ax inc  -6 [bp] ax cmp  1 $ jc
+4 $:  ret
+end-code
+\ (fpoly)
+label fpoly5 ( -- )  \ find y min/max
+  $7FFF # -12 [bp] mov  $8000 # -14 [bp] mov
+  -2 [bp] bx mov  bx inc  bx inc
+1 $:  0 [bx] ax mov  4 # bx add
+  $80 # ah cmp  2 $ jnz
+  1 # al cmp  1 $ jz  ret
+
+2 $:  -12 [bp] ax cmp  3 $ jnl
+  ax -12 [bp] mov
+3 $:  -14 [bp] ax cmp  1 $ jl
+  ax -14 [bp] mov  1 $ ju
+end-code
+
+
+
+\ (fpoly)
+label fpoly6 ( -- )
+  es push  ds pop
+  fpoly5 ) call
+  -12 [bp] ax mov  ( ymin )
+  ax -10 [bp] mov  ( start )
+1 $:  fpoly3 ) call  fpoly4 ) call
+  -10 [bp] inc  -10 [bp] ax mov
+  -14 [bp] ax cmp  1 $ jl
+  ds push  es pop
+  cs push  ds pop  ret
+end-code
+
+
+
+
+\ (fpoly)
+\ fill poly emulation
+label (fpoly) ( ES:BX=buf AX=points CX=maxpoints )
+  0 # getfillsettings ) cmp  2 $ jz  ( empty pattern? )
+  3 # ax cmp  2 $ jc  ( enough points? )
+  sp bp mov  18 # sp sub
+  bx -2 [bp] mov  cx -8 [bp] mov
+  ax shl  ax shl  ax bx add  bx -4 [bp] mov
+  xcolor ) ax mov  ax push  ah al mov  1 $ ) call
+  fpoly6 ) call
+  ax pop  ax xcolor ) mov  18 # sp add
+1 $:  es push  30 # si mov  bgivec [] far call ( color)  es pop
+2 $:  ret
+end-code
+
+
+\ patch in emulated functions
+(fpoly)     elist 2 + !
+(arc)       elist 10 + !
+(pie)       elist 14 + !
+(fellipse)  elist 18 + !
+
+
+
+
+
+
+
+
+
+
+
+\ REDUCE SIN COS
+\ Reduce angle to 0-360
+code REDUCE ( degree -- degree2 )
+  ax pop  cx push  360 # cx mov  ax ax or  2 $ ju
+1 $:  cx ax add  2 $:  1 $ js  4 $ ju
+3 $:  cx ax sub  4 $:  361 # ax cmp  3 $ jnl
+  cx pop  ax push  next
+end-code
+
+\ Angles must be in the range 0..360
+code SIN ( degree multiplier -- sin )  bx pop  ax pop
+  xsin ) call  dx push  next  end-code
+
+code COS ( degree multiplier -- cos )  bx pop  ax pop
+  xcos ) call  dx push  next  end-code
+
+\ fixangle acenter
+\ reduce angles
+: fixangle ( sa ea rad_x rad_y -- sa' ea' rad_x rad_y )
+  2>r  swap reduce  swap reduce  2r> ;
+
+\ set arc centre point
+: acenter ( x y -- )
+  2dup swap getarccoords 2!
+  moveto ;
+
+\ adjust Y-radius for correct aspect
+: radjust ( radius -- radius2 )
+  getaspectratio >r  um*  r> um/mod nip ;
+
+
+
+\ ELLIPSE ARC CIRCLE SECTOR PIESLICE
+: ELLIPSE ( x y start_angle end_angle x_radius y_radius -- )
+  2rot acenter  fixangle  garc ;
+
+: ARC ( x y start_angle end_angle radius -- )
+  dup radjust  ellipse ;
+
+: CIRCLE ( x y radius -- )  0 360 rot arc ;
+
+: SECTOR ( x y start_angle end_angle x_radius y_radius -- )
+  2rot acenter  fixangle  pie ;
+
+: PIESLICE ( x y start_angle end_angle radius -- )
+  dup radjust  sector ;
+
+
+\ FILLELLIPSE RECTANGLE
+: FILLELLIPSE ( x y x_radius y_radius -- )
+  2over acenter  2dup fellipse  0 360 2swap ellipse ;
+
+: RECTANGLE ( x1 y1 x2 y2 -- )  \ P.Rubin c.l.f
+  2over  2dup moveto  2over swap rot lineto
+  2swap lineto  lineto  lineto ;
+
+
+
+
+
+
+
+
+
+\ BAR3D
+0 value x1  0 value y1  0 value x2  0 value y2  0 value bd
+
+: BAR3D ( x1 y1 x2 y2 depth top -- )
+  >r  dup 3 4 */ to bd  >r
+  inorder  to y2  to x2  to y1  to x1
+  x1 1+ y1 1+ x2 1- y2 1- bar
+  x1 y1 x2 y2 rectangle
+  r@ if ( depth )
+    x2 y2 over r@ + over bd - line
+    x2 r@ + y2 bd - over y1 bd - line
+  then  2r@ 0<> and if ( top and depth )
+    x1 y1 over r@ + over bd - line
+    x2 y1 over r@ + over bd - line
+    x1 r@ + y1 bd - x2 r@ + y1 bd - line
+  then  2r> 2drop ;
+\ constants
+aka 0           EMPTYFILL       \ fill styles
+aka 1           SOLIDFILL
+aka 2           LINEFILL
+aka 3           LTSLASHFILL
+4 constant      SLASHFILL
+5 constant      BKSLASHFILL
+6 constant      LTBKSLASHFILL
+7 constant      HATCHFILL
+8 constant      XHATCHFILL
+9 constant      INTERLEAVEFILL
+10 constant     WIDEDOTFILL
+11 constant     CLOSEDOTFILL
+12 constant     USERFILL
+
+
+\ constants
+aka 0           SOLIDLN         \ line styles
+aka 1           DOTTEDLN
+aka 2           CENTERLN
+aka 3           DASHEDLN
+aka slashfill   USERBITLN
+
+aka 1           NORMWIDTH       \ line widths
+aka 3           THICKWIDTH
+
+aka 0           CLIPOFF         \ viewport
+aka 1           CLIPON
+
+aka 0           TOPOFF          \ bar3d
+aka 1           TOPON
+
+\ constants
+aka 0           HORIZDIR        \ text direction
+aka 1           VERTDIR
+
+aka 0           LEFTTEXT        \ text justification
+aka 1           CENTERTEXT
+aka 2           RIGHTTEXT
+aka 0           BOTTOMTEXT
+aka 2           TOPTEXT
+
+aka 0           DEFAULTFONT     \ fonts
+\ aka 1           TRIPLEXFONT
+\ aka 2           SMALLFONT
+\ aka 3           SANSSERIFFONT
+\ aka slashfill   GOTHICFONT
+
+\ constants
+aka 0           NORMALPUT       \ bitmap ops
+aka 0           COPYPUT
+aka 1           XORPUT
+aka 2           ORPUT
+aka 3           ANDPUT
+aka slashfill   NOTPUT
+
+
+
+
+
+
+
+
+
+\ discard heads
+behead  even db
+behead  bgivec field
+behead  xmin xline
+behead  gstat! initgr
+behead  nextp movpoly
+behead  xadjust yadjust
+behead  curpal! curpal!
+behead  sines (fpoly)
+behead  fixangle radjust
+behead  x1 bd
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
