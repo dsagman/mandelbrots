@@ -9,8 +9,8 @@ a = 640: b = 350
 bk = 100
 rmin = -.74612: rmax = -.74427
 imin = .11196: imax = .11339
-dp = (pmax - pmin) / (a - 1)
-dq = (qmax - qmin) / (b - 1)
+dp = (rmax - rmin) / (a - 1)
+dq = (imax - imin) / (b - 1)
 m = 200
 FOR y = 0 TO b - 1
   FOR x = 0 TO a - 1
