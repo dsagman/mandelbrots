@@ -13,8 +13,8 @@ Answer: a whole lot.
 
 The speedup from my lousy BASIC code in 1989 to parallel Rust in 2023 is over 1 million times.
 
-![Alt text](Mandelbrots in Time - Sheet1.pdf)
+![Alt text](<mandelbrots in time.png>)
 
-Spreadsheet also here:
+Spreadsheet results are also here:
 
 https://docs.google.com/spreadsheets/d/1bUzblDCEffGtFhBnV9n7ZmAWqEKKS1V7aeNJAy_CK9c/edit?usp=sharing
