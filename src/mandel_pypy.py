@@ -37,7 +37,7 @@ def main():
     IM_END = 0.11339
 
     # Max iterations
-    MAX_ITER = 200
+    MAX_ITER = 10000
 
     print("Starting calculations...")
     start_time = time.time()

@@ -179,10 +179,16 @@ def main():
     # gl.glBindBuffer(gl.GL_ARRAY_BUFFER, color_buffer)
     # gl.glVertexAttribPointer(1, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
 
+    # state = {
+    #     'zoom': 1,
+    #     'pos_x': -0.7600189058857209,
+    #     'pos_y': 0.0799516080512771,
+    #     'max_iters': 100,
+    # }
     state = {
         'zoom': 1,
-        'pos_x': -0.7600189058857209,
-        'pos_y': 0.0799516080512771,
+        'pos_x': -0.745195,
+        'pos_y': 0.112675,
         'max_iters': 100,
     }
 
